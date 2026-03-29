@@ -2,54 +2,61 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 /**
  * StageChain — Module de déploiement Hardhat Ignition
- * Déploie les 7 smart contracts dans l'ordre avec les bonnes dépendances
+ * Déploie les 6 smart contracts dans l'ordre avec les bonnes dépendances
+ *
+ * Ordre de déploiement :
+ *   SC1 — AccountManager       (aucune dépendance)
+ *   SC2 — OffreManager         (dépend de SC1)
+ *   SC3 — ConventionManager    (dépend de SC1, SC2)
+ *   SC4 — SuiviManager         (dépend de SC1, SC3)
+ *   SC5 — RapportManager       (dépend de SC1, SC3)
+ *   SC6 — CertifManager        (dépend de SC1, SC5, SC3)
  */
 const StageChainModule = buildModule("StageChainModule", (m) => {
 
-  // ── SC1 — UserManager ────────────────────────────────────────────
-  const userManager = m.contract("UserManager");
+  // ── SC1 — AccountManager ─────────────────────────────────────────
+  // Gestion des comptes : universités (auto-inscription),
+  // étudiants/encadrants (via admin), RH (auto-inscription)
+  const accountManager = m.contract("AccountManager");
 
   // ── SC2 — OffreManager ───────────────────────────────────────────
-  const offreManager = m.contract("OffreManager", [userManager]);
+  // Publication offres + candidatures + sélection
+  const offreManager = m.contract("OffreManager", [
+    accountManager,
+  ]);
 
-  // ── SC3 — CandidatureManager ─────────────────────────────────────
-  const candidatureManager = m.contract("CandidatureManager", [
-    userManager,
+  // ── SC3 — ConventionManager ──────────────────────────────────────
+  // Génération convention, affectation encadrant, signatures tripartites
+  const conventionManager = m.contract("ConventionManager", [
+    accountManager,
     offreManager,
   ]);
 
-  // ── SC4 — ConventionManager ──────────────────────────────────────
-  const conventionManager = m.contract("ConventionManager", [
-    userManager,
-    candidatureManager,
-  ]);
-
-  // ── SC5 — SuiviManager ───────────────────────────────────────────
+  // ── SC4 — SuiviManager ───────────────────────────────────────────
+  // Dépôt et validation des rapports d'avancement
   const suiviManager = m.contract("SuiviManager", [
-    userManager,
+    accountManager,
     conventionManager,
   ]);
 
-  // ── SC6 — RapportManager ─────────────────────────────────────────
+  // ── SC5 — RapportManager ─────────────────────────────────────────
+  // Rapport final, notation RH (60%) + Encadrant (40%), calcul note
   const rapportManager = m.contract("RapportManager", [
-    userManager,
+    accountManager,
     conventionManager,
   ]);
 
-  // ── SC7 — CertifManager ──────────────────────────────────────────
+  // ── SC6 — CertifManager ──────────────────────────────────────────
+  // Génération attestation, signatures Admin + RH, vérification QR
   const certifManager = m.contract("CertifManager", [
-    userManager,
-    conventionManager,
+    accountManager,
     rapportManager,
+    conventionManager,
   ]);
-
-  // ── Lien SC6 → SC7 (appel setCertifManager après déploiement) ────
-  m.call(rapportManager, "setCertifManager", [certifManager]);
 
   return {
-    userManager,
+    accountManager,
     offreManager,
-    candidatureManager,
     conventionManager,
     suiviManager,
     rapportManager,
