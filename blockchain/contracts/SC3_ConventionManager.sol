@@ -189,7 +189,6 @@ contract ConventionManager {
         require(conv.id != 0, "ConventionManager: convention inexistante");
         require(msg.sender == conv.etudiant, "ConventionManager: pas votre convention");
         require(!conv.signEtudiant, "ConventionManager: deja signe");
-        require(conv.encadrant != address(0), "ConventionManager: encadrant non affecte");
 
         conv.signEtudiant = true;
         _updateStatut(conv);
@@ -202,7 +201,6 @@ contract ConventionManager {
         require(conv.id != 0, "ConventionManager: convention inexistante");
         require(msg.sender == conv.rh, "ConventionManager: pas votre convention");
         require(!conv.signRH, "ConventionManager: deja signe");
-        require(conv.encadrant != address(0), "ConventionManager: encadrant non affecte");
 
         conv.signRH = true;
         _updateStatut(conv);
@@ -215,7 +213,6 @@ contract ConventionManager {
         require(conv.id != 0, "ConventionManager: convention inexistante");
         require(msg.sender == conv.admin, "ConventionManager: pas votre universite");
         require(!conv.signAdmin, "ConventionManager: deja signe");
-        require(conv.encadrant != address(0), "ConventionManager: encadrant non affecte");
 
         conv.signAdmin = true;
         _updateStatut(conv);
