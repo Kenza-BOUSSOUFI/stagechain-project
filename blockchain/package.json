@@ -9,7 +9,6 @@
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "node": "hardhat node",
     "typecheck": "tsc --noEmit"
-
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.6",
@@ -22,7 +21,7 @@
     "@types/node": "^22.19.15",
     "chai": "^6.2.2",
     "ethers": "^6.16.0",
-    "hardhat": "^3.1.12",
+    "hardhat": "^3.2.0",
     "mocha": "^11.7.5",
     "typescript": "~5.8.0"
   },
@@ -31,6 +30,4 @@
     "dotenv": "^17.3.1"
   },
   "type": "module"
-  
 }
-

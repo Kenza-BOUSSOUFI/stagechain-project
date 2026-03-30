@@ -18,6 +18,10 @@ contract AccountManager {
         string  prenom;
         string  filiere;
         string  entreprise;
+        string  email;
+        string  telephone;
+        string  poste;
+        string  ville;
         address universite;   // université de rattachement (pour STUDENT/ENCADRANT)
         bool    isActive;
         uint256 registeredAt;
@@ -27,6 +31,10 @@ contract AccountManager {
         address wallet;
         string  nom;
         string  ville;
+        string  adresse;
+        string  email;
+        string  telephone;
+        string  siteWeb;
         bool    isActive;
         uint256 registeredAt;
     }
@@ -82,14 +90,25 @@ contract AccountManager {
     /// @notice N'importe qui peut créer un compte université (admin de son université)
     function registerUniversite(
         string calldata _nom,
-        string calldata _ville
+        string calldata _ville,
+        string calldata _adresse,
+        string calldata _email,
+        string calldata _telephone,
+        string calldata _siteWeb
     ) external walletValide(msg.sender) {
         require(bytes(_nom).length > 0, "AccountManager: nom requis");
+        require(bytes(_ville).length > 0, "AccountManager: ville requise");
+        require(bytes(_email).length > 0, "AccountManager: email requis");
+        require(bytes(_telephone).length > 0, "AccountManager: telephone requis");
 
         universites[msg.sender] = Universite({
             wallet: msg.sender,
             nom: _nom,
             ville: _ville,
+            adresse: _adresse,
+            email: _email,
+            telephone: _telephone,
+            siteWeb: _siteWeb,
             isActive: true,
             registeredAt: block.timestamp
         });
@@ -101,6 +120,10 @@ contract AccountManager {
             prenom: "",
             filiere: "",
             entreprise: "",
+            email: _email,
+            telephone: _telephone,
+            poste: "ADMIN_UNIVERSITE",
+            ville: _ville,
             universite: msg.sender,
             isActive: true,
             registeredAt: block.timestamp
@@ -129,6 +152,10 @@ contract AccountManager {
             prenom: _prenom,
             filiere: _filiere,
             entreprise: "",
+            email: "",
+            telephone: "",
+            poste: "",
+            ville: "",
             universite: msg.sender,  // rattaché à l'université de l'admin
             isActive: true,
             registeredAt: block.timestamp
@@ -151,6 +178,10 @@ contract AccountManager {
             prenom: _prenom,
             filiere: _filiere,
             entreprise: "",
+            email: "",
+            telephone: "",
+            poste: "",
+            ville: "",
             universite: msg.sender,
             isActive: true,
             registeredAt: block.timestamp
@@ -167,9 +198,18 @@ contract AccountManager {
     function registerRH(
         string calldata _nom,
         string calldata _prenom,
-        string calldata _entreprise
+        string calldata _entreprise,
+        string calldata _poste,
+        string calldata _email,
+        string calldata _telephone,
+        string calldata _ville
     ) external walletValide(msg.sender) {
+        require(bytes(_nom).length > 0, "AccountManager: nom requis");
         require(bytes(_entreprise).length > 0, "AccountManager: entreprise requise");
+        require(bytes(_poste).length > 0, "AccountManager: poste requis");
+        require(bytes(_email).length > 0, "AccountManager: email requis");
+        require(bytes(_telephone).length > 0, "AccountManager: telephone requis");
+        require(bytes(_ville).length > 0, "AccountManager: ville requise");
 
         users[msg.sender] = User({
             wallet: msg.sender,
@@ -178,6 +218,10 @@ contract AccountManager {
             prenom: _prenom,
             filiere: "",
             entreprise: _entreprise,
+            email: _email,
+            telephone: _telephone,
+            poste: _poste,
+            ville: _ville,
             universite: address(0),
             isActive: true,
             registeredAt: block.timestamp
