@@ -112,7 +112,6 @@ contract ConventionManager {
             bytes(_cidConvention).length > 0,
             "ConventionManager: CID requis"
         );
-
         // Récupérer l'admin université de l'étudiant
         AccountManager.User memory etudiantUser = accountManager.getUser(c.etudiant);
         address adminUniversite = etudiantUser.universite;
