@@ -31,8 +31,8 @@ contract OffreManager {
         uint256 id;
         uint256 offreId;
         address etudiant;
-        string  cidCV;          // CID IPFS du CV
-        string  cidLM;          // CID IPFS de la lettre de motivation
+        string  cidCV;          
+        string  cidLM;          
         StatutCandidature statut;
         uint256 createdAt;
     }
