@@ -1,0 +1,460 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accountManager",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "candidatureId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "offreId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "CandidatureDeposee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "candidatureId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "CandidatureRefusee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "candidatureId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "offreId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "EtudiantSelectionne",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "offreId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "rh",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "OffrePubliee",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "accountManager",
+    "outputs": [
+      {
+        "internalType": "contract AccountManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllOffres",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_candidatureId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getCandidature",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offreId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "etudiant",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "cidCV",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "cidLM",
+            "type": "string"
+          },
+          {
+            "internalType": "enum OffreManager.StatutCandidature",
+            "name": "statut",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct OffreManager.Candidature",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_etudiant",
+        "type": "address"
+      }
+    ],
+    "name": "getCandidaturesByEtudiant",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_offreId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getCandidaturesByOffre",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_rh",
+        "type": "address"
+      }
+    ],
+    "name": "getMetriquesRH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "nbOffres",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nbStagiaires",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_offreId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getOffre",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "rh",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "titre",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "domaine",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "competences",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "dureeJours",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nbPlaces",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nbCandidatures",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum OffreManager.StatutOffre",
+            "name": "statut",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct OffreManager.Offre",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "nbOffresParRH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "nbStagiairesParRH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_offreId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_cidCV",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_cidLM",
+        "type": "string"
+      }
+    ],
+    "name": "postuler",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_titre",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_domaine",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_competences",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_dureeJours",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_nbPlaces",
+        "type": "uint256"
+      }
+    ],
+    "name": "publierOffre",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_candidatureId",
+        "type": "uint256"
+      }
+    ],
+    "name": "refuserCandidature",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_candidatureId",
+        "type": "uint256"
+      }
+    ],
+    "name": "selectionnerEtudiant",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

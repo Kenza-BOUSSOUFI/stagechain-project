@@ -1,0 +1,258 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accountManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_conventionManager",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "encadrant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "commentaire",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "RapportCommente",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "RapportDepose",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "encadrant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "RapportValide",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "accountManager",
+    "outputs": [
+      {
+        "internalType": "contract AccountManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_rapportId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_commentaire",
+        "type": "string"
+      }
+    ],
+    "name": "commenterRapport",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "conventionManager",
+    "outputs": [
+      {
+        "internalType": "contract ConventionManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_cidRapport",
+        "type": "string"
+      }
+    ],
+    "name": "deposerRapport",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_rapportId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRapport",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "etudiant",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "cidRapport",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "commentaire",
+            "type": "string"
+          },
+          {
+            "internalType": "enum SuiviManager.StatutRapport",
+            "name": "statut",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SuiviManager.RapportAvancement",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_encadrant",
+        "type": "address"
+      }
+    ],
+    "name": "getRapportsByEncadrant",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_etudiant",
+        "type": "address"
+      }
+    ],
+    "name": "getRapportsByEtudiant",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_rapportId",
+        "type": "uint256"
+      }
+    ],
+    "name": "validerRapport",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -1,0 +1,442 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accountManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_rapportManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_conventionManager",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "attestationId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "AttestationCertifiee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "attestationId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "AttestationGeneree",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "attestationId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "AttestationRevoquee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "attestationId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "signataire",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "AttestationSignee",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "accountManager",
+    "outputs": [
+      {
+        "internalType": "contract AccountManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "attestationParEtudiant",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "name": "attestationParQR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "conventionManager",
+    "outputs": [
+      {
+        "internalType": "contract ConventionManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_etudiant",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_cidAttestation",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_qrCodeData",
+        "type": "string"
+      }
+    ],
+    "name": "genererAttestation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_attestationId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAttestation",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "etudiant",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "admin",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rh",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "cidAttestation",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "qrCodeData",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "noteFinale",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "signAdmin",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "signRH",
+            "type": "bool"
+          },
+          {
+            "internalType": "enum CertifManager.StatutAttestation",
+            "name": "statut",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct CertifManager.Attestation",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_etudiant",
+        "type": "address"
+      }
+    ],
+    "name": "getAttestationByEtudiant",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "etudiant",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "admin",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rh",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "cidAttestation",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "qrCodeData",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "noteFinale",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "signAdmin",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "signRH",
+            "type": "bool"
+          },
+          {
+            "internalType": "enum CertifManager.StatutAttestation",
+            "name": "statut",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct CertifManager.Attestation",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rapportManager",
+    "outputs": [
+      {
+        "internalType": "contract RapportManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_attestationId",
+        "type": "uint256"
+      }
+    ],
+    "name": "revoquerAttestation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_attestationId",
+        "type": "uint256"
+      }
+    ],
+    "name": "signerParAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_attestationId",
+        "type": "uint256"
+      }
+    ],
+    "name": "signerParRH",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_qrCodeData",
+        "type": "string"
+      }
+    ],
+    "name": "verifierParQR",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "estValide",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "noteFinale",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

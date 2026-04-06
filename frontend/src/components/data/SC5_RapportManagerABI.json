@@ -1,0 +1,379 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_accountManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_conventionManager",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "note",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "NoteEncadrantDeposee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "noteFinale",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "NoteFinaleCalculee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "note",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "NoteRHDeposee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "rapportId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "etudiant",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      }
+    ],
+    "name": "RapportFinalDepose",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "accountManager",
+    "outputs": [
+      {
+        "internalType": "contract AccountManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "conventionManager",
+    "outputs": [
+      {
+        "internalType": "contract ConventionManager",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_cidRapport",
+        "type": "string"
+      }
+    ],
+    "name": "deposerRapportFinal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_etudiant",
+        "type": "address"
+      }
+    ],
+    "name": "getRapportByEtudiant",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "etudiant",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "cidRapportFinal",
+            "type": "string"
+          },
+          {
+            "internalType": "uint8",
+            "name": "noteRH",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "noteEncadrant",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "noteFinale",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "noteRHDeposee",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "noteEncadrantDeposee",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "noteCalculee",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct RapportManager.RapportFinal",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_rapportId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRapportFinal",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "etudiant",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "cidRapportFinal",
+            "type": "string"
+          },
+          {
+            "internalType": "uint8",
+            "name": "noteRH",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "noteEncadrant",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "noteFinale",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "noteRHDeposee",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "noteEncadrantDeposee",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "noteCalculee",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct RapportManager.RapportFinal",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_etudiant",
+        "type": "address"
+      }
+    ],
+    "name": "isNoteCalculee",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_rapportId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_note",
+        "type": "uint8"
+      }
+    ],
+    "name": "noterParEncadrant",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_rapportId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_note",
+        "type": "uint8"
+      }
+    ],
+    "name": "noterParRH",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "rapportParEtudiant",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
