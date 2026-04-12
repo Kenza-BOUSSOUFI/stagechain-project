@@ -20,11 +20,14 @@ contract AccountManager {
         string  entreprise;
         string  email;
         string  telephone;
-        string  poste;
+        string  poste;        // ex. niveau d’études pour les étudiants
         string  ville;
-        address universite;   // université de rattachement (pour STUDENT/ENCADRANT)
+        address universite;   // wallet admin = établissement qui a créé le compte (STUDENT/ENCADRANT)
         bool    isActive;
         uint256 registeredAt;
+        string  bio;
+        string  competences;  // texte libre (compétences)
+        string  langues;
     }
 
     struct Universite {
@@ -126,7 +129,10 @@ contract AccountManager {
             ville: _ville,
             universite: msg.sender,
             isActive: true,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp,
+            bio: "",
+            competences: "",
+            langues: ""
         });
 
         universiteList.push(msg.sender);
@@ -156,9 +162,12 @@ contract AccountManager {
             telephone: "",
             poste: "",
             ville: "",
-            universite: msg.sender,  // rattaché à l'université de l'admin
+            universite: msg.sender,  // propriété : admin université qui a créé le compte
             isActive: true,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp,
+            bio: "",
+            competences: "",
+            langues: ""
         });
         studentList.push(_wallet);
         emit UserRegistered(_wallet, Role.STUDENT, msg.sender, block.timestamp);
@@ -184,7 +193,10 @@ contract AccountManager {
             ville: "",
             universite: msg.sender,
             isActive: true,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp,
+            bio: "",
+            competences: "",
+            langues: ""
         });
         encadrantList.push(_wallet);
         emit UserRegistered(_wallet, Role.ENCADRANT, msg.sender, block.timestamp);
@@ -224,7 +236,10 @@ contract AccountManager {
             ville: _ville,
             universite: address(0),
             isActive: true,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp,
+            bio: "",
+            competences: "",
+            langues: ""
         });
         rhList.push(msg.sender);
         emit UserRegistered(msg.sender, Role.RH, address(0), block.timestamp);
@@ -243,6 +258,41 @@ contract AccountManager {
         );
         users[_wallet].isActive = false;
         emit UserDeactivated(_wallet, block.timestamp);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Étudiant — mise à jour du profil (on-chain)
+    // ─────────────────────────────────────────────
+
+    /// @notice L’étudiant met à jour ses informations (l’université de rattachement reste celle définie par l’admin)
+    function updateStudentProfile(
+        string calldata _nom,
+        string calldata _prenom,
+        string calldata _filiere,
+        string calldata _email,
+        string calldata _telephone,
+        string calldata _ville,
+        string calldata _niveau,
+        string calldata _bio,
+        string calldata _competences,
+        string calldata _langues
+    ) external {
+        User storage u = users[msg.sender];
+        require(u.role == Role.STUDENT, "AccountManager: etudiant uniquement");
+        require(u.isActive, "AccountManager: compte inactif");
+        require(bytes(_nom).length > 0, "AccountManager: nom requis");
+        require(bytes(_prenom).length > 0, "AccountManager: prenom requis");
+
+        u.nom = _nom;
+        u.prenom = _prenom;
+        u.filiere = _filiere;
+        u.email = _email;
+        u.telephone = _telephone;
+        u.ville = _ville;
+        u.poste = _niveau;
+        u.bio = _bio;
+        u.competences = _competences;
+        u.langues = _langues;
     }
 
     // ─────────────────────────────────────────────

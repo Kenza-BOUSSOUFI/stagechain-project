@@ -18,7 +18,7 @@ export const NAV = {
   etudiant: [
     { id: 'dashboard',   l: 'Tableau de Bord' },
     { id: 'etu_profile', l: 'Mon Profil' },
-    { id: 'matching',    l: 'Offres & Matching' },
+    { id: 'matching',    l: 'Offres de stage' },
     { id: 'candidature', l: 'Mes Candidatures' },
     { id: 'convention',  l: 'Ma Convention' },
     { id: 'rapport',     l: 'Mes Rapports' },

@@ -1,5 +1,5 @@
 // src/components/pages/etudiant/Convention.js
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import PH from '../ui/PH';
 import Glass from '../ui/Glass';
 import Btn from '../ui/Btn';
@@ -10,10 +10,12 @@ import Tag from '../ui/Tag';
 import { CheckCircle, Clock } from 'lucide-react';
 import { Download } from 'lucide-react';
 import { getConnectedWallet, getConventionManagerContract, getContractReadOnly, getOffreManagerContract } from '../hooks/useContract';
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 import Modal from '../ui/Modal';
 import ConventionViewer from '../common/ConventionViewer';
 
 const Convention = () => {
+  const pollRef = useRef(false);
   const toast = useToast();
   const [conv, setConv] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,8 @@ const Convention = () => {
   const [viewConvM, setViewConvM] = useState(null);
 
   const loadConvention = async () => {
-    setLoading(true);
+    const poll = pollRef.current;
+    if (!poll) setLoading(true);
     try {
       const [convC, accountC, offreC, me] = await Promise.all([
         getConventionManagerContract(),
@@ -46,16 +49,13 @@ const Convention = () => {
       });
     } catch (err) {
       setConv(null);
-      toast(err?.reason || err?.message || 'Aucune convention trouvée', 'warning');
     } finally {
-      setLoading(false);
+      if (!poll) setLoading(false);
+      pollRef.current = true;
     }
   };
 
-  useEffect(() => {
-    loadConvention();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useChainDataRefresh(loadConvention);
 
   const sigs = { etu: !!conv?.signEtudiant, rh: !!conv?.signRH, admin: !!conv?.signAdmin };
   const all = sigs.etu && sigs.rh && sigs.admin;

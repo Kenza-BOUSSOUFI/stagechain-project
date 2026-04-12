@@ -1,250 +1,250 @@
-// src/components/pages/etudiant/EtuProfile.js
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import PH from '../ui/PH';
 import Card from '../ui/Card';
 import Btn from '../ui/Btn';
 import Inp from '../ui/Inp';
 import Tag from '../ui/Tag';
-import Modal from '../ui/Modal';
 import Alrt from '../ui/Alrt';
-import Sel from '../ui/Sel';
-import Txta from '../ui/Txta';
 import Glass from '../ui/Glass';
 import ML from '../ui/ML';
+import Txta from '../ui/Txta';
 import { useToast } from '../common/ToastProvider';
-import { Edit2, Plus, Save, Trash2 } from 'lucide-react';
-import { useMM } from '../hooks/useMM';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Edit2, Save, RefreshCw, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import {
+  getAccountManagerContract,
+  getConnectedWallet,
+  getContractReadOnly,
+} from '../hooks/useContract';
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 
+const ZERO = '0x0000000000000000000000000000000000000000';
 
-const EtuProfile = ({ user }) => {
+const emptyUni = { nom: '', ville: '', adresse: '', email: '', siteWeb: '' };
+
+const EtuProfile = () => {
+  const pollRef = useRef(false);
   const toast = useToast();
-
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    nom: user?.nom || 'Amine Filali',
-    filiere: user?.extra?.filiere || 'Génie Logiciel',
-    niveau: user?.extra?.niveau || 'Bac+4',
-    email: user?.email || 'amine@emsi.ma',
-    tel: '0661234567',
-    ville: 'Casablanca',
-    competences: 'React.js, Node.js, Solidity, Python, Docker',
-    langues: 'Arabe, Français, Anglais',
-    bio: "Étudiant en génie logiciel passionné par la blockchain et le développement Web3."
+  const [wallet, setWallet] = useState('');
+  const [uniAdmin, setUniAdmin] = useState(emptyUni);
+  const [form, setForm] = useState({
+    nom: '',
+    prenom: '',
+    filiere: '',
+    email: '',
+    telephone: '',
+    ville: '',
+    niveau: '',
+    bio: '',
+    competences: '',
+    langues: '',
   });
 
-  const [formP, setFormP] = useState({ ...profile });
+  const loadProfile = useCallback(async () => {
+    const poll = pollRef.current;
+    if (!poll) setLoading(true);
+    try {
+      const [me, accountC] = await Promise.all([getConnectedWallet(), getContractReadOnly()]);
+      setWallet(me);
+      const u = await accountC.getUser(me);
+      const uniAddr = u.universite;
+      let uni = { ...emptyUni };
+      if (uniAddr && String(uniAddr).toLowerCase() !== ZERO) {
+        try {
+          const raw = await accountC.getUniversite(uniAddr);
+          uni = {
+            nom: raw.nom || '',
+            ville: raw.ville || '',
+            adresse: raw.adresse || '',
+            email: raw.email || '',
+            siteWeb: raw.siteWeb || '',
+          };
+        } catch (_) {
+          uni = { ...emptyUni, nom: 'Établissement (wallet admin)', adresse: String(uniAddr) };
+        }
+      }
+      setUniAdmin(uni);
+      setForm({
+        nom: u.nom || '',
+        prenom: u.prenom || '',
+        filiere: u.filiere || '',
+        email: u.email || '',
+        telephone: u.telephone || '',
+        ville: u.ville || '',
+        niveau: u.poste || '',
+        bio: u.bio || '',
+        competences: u.competences || '',
+        langues: u.langues || '',
+      });
+    } catch (err) {
+      toast(err?.reason || err?.message || 'Impossible de charger le profil on-chain', 'error');
+    } finally {
+      if (!poll) setLoading(false);
+      pollRef.current = true;
+    }
+  }, [toast]);
 
-  const [projets, setProjets] = useState([
-    { id: 1, titre: 'DApp Voting System', tech: 'Solidity, React', desc: 'Application de vote décentralisée sur Ethereum.', lien: 'github.com/amine/voting-dapp' },
-    { id: 2, titre: 'NFT Marketplace', tech: 'Solidity, IPFS', desc: 'Marketplace NFTs avec stockage IPFS.', lien: 'github.com/amine/nft-market' },
-  ]);
+  useChainDataRefresh(loadProfile);
 
-  const [posts, setPosts] = useState([
-    { id: 1, contenu: "Première DApp déployée sur Sepolia ! 🚀", date: '15 Jan 2026' },
-    { id: 2, contenu: "Intégration MetaMask réussie avec ethers.js.", date: '20 Jan 2026' },
-  ]);
-
-  const [newProjet, setNewProjet] = useState({ titre: '', tech: '', desc: '', lien: '' });
-  const [newPost, setNewPost] = useState('');
-  const [showProjForm, setShowProjForm] = useState(false);
-  const [editProjId, setEditProjId] = useState(null);
-  const [editProjForm, setEditProjForm] = useState({});
-
-  const saveProfile = () => {
-    setProfile({ ...formP });
-    setEditing(false);
-    toast('Profil mis à jour !', 'success');
-  };
-
-  const addProjet = () => {
-    if (!newProjet.titre.trim()) {
-      toast('Titre requis !', 'error');
+  const saveOnChain = async () => {
+    if (!form.nom.trim() || !form.prenom.trim()) {
+      toast('Nom et prénom sont obligatoires.', 'error');
       return;
     }
-    setProjets(p => [...p, { id: Date.now(), ...newProjet }]);
-    setNewProjet({ titre: '', tech: '', desc: '', lien: '' });
-    setShowProjForm(false);
-    toast('Projet ajouté !', 'success');
-  };
-
-  const delProjet = (id) => {
-    setProjets(p => p.filter(x => x.id !== id));
-    toast('Projet supprimé', 'info');
-  };
-
-  const saveEditProjet = () => {
-    setProjets(p => p.map(x => x.id === editProjId ? { ...editProjForm } : x));
-    setEditProjId(null);
-    toast('Projet modifié', 'success');
-  };
-
-  const addPost = () => {
-    if (!newPost.trim()) {
-      toast('Rédigez votre post !', 'error');
-      return;
+    try {
+      setSaving(true);
+      const c = await getAccountManagerContract();
+      const tx = await c.updateStudentProfile(
+        form.nom.trim(),
+        form.prenom.trim(),
+        form.filiere.trim(),
+        form.email.trim(),
+        form.telephone.trim(),
+        form.ville.trim(),
+        form.niveau.trim(),
+        form.bio.trim(),
+        form.competences.trim(),
+        form.langues.trim()
+      );
+      toast('Transaction envoyée, confirmez dans MetaMask...', 'loading');
+      await tx.wait();
+      toast('Profil enregistré sur la blockchain.', 'success');
+      setEditing(false);
+      await loadProfile();
+    } catch (err) {
+      toast(err?.reason || err?.message || 'Échec de la mise à jour', 'error');
+    } finally {
+      setSaving(false);
     }
-    setPosts(p => [{ id: Date.now(), contenu: newPost, date: new Date().toLocaleDateString('fr-FR') }, ...p]);
-    setNewPost('');
-    toast('Post publié !', 'success');
   };
 
-  const delPost = (id) => setPosts(p => p.filter(x => x.id !== id));
-
-  const wallet = user?.wallet || '0x...';
+  const initials = `${(form.prenom?.[0] || '')}${(form.nom?.[0] || '')}`.toUpperCase() || '?';
 
   return (
     <div className="fi">
-      <PH title="Mon Profil" subtitle="Espace Étudiant">
-        {!editing && <Btn I={Edit2} onClick={() => { setFormP({ ...profile }); setEditing(true); }}>Modifier le profil</Btn>}
+      <PH title="Mon profil" subtitle="Données stockées on-chain">
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Btn sm v="ghost" I={RefreshCw} onClick={loadProfile} disabled={loading || saving}>
+            Rafraîchir
+          </Btn>
+          {!editing && (
+            <Btn I={Edit2} onClick={() => setEditing(true)} disabled={loading}>
+              Modifier
+            </Btn>
+          )}
+        </div>
       </PH>
 
-      {!editing ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr', gap: 18 }}>
-          {/* Colonne gauche */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            <Glass style={{ textAlign: 'center', padding: 24 }}>
-              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--acd)', border: '3px solid var(--brh)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 28, fontWeight: 800, color: 'var(--ac)' }}>
-                {profile.nom[0]}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>{profile.nom}</div>
-              <div style={{ fontSize: 12, color: 'var(--t2)', marginBottom: 6 }}>{profile.filiere}</div>
-              <Tag label={profile.niveau} c="ac" />
-              {/* Contact info */}
-              {[{ I: Mail, v: profile.email }, { I: Phone, v: profile.tel }, { I: MapPin, v: profile.ville }].map((r, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-                  <r.I size={12} style={{ color: 'var(--t3)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: 'var(--t2)', wordBreak: 'break-all' }}>{r.v}</span>
-                </div>
-              ))}
-              <div style={{ fontSize: 9, fontFamily: 'var(--fm)', color: 'var(--t3)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Wallet</div>
-              <div style={{ fontSize: 9, fontFamily: 'var(--fm)', color: 'var(--ac)', wordBreak: 'break-all' }}>{wallet}</div>
-            </Glass>
+      <Alrt
+        type="info"
+        message="Votre rattachement à l’université est défini par l’admin qui a créé votre compte ; vous ne pouvez pas le modifier. Les CV et lettres de motivation se joignent uniquement lors d’une candidature (offres de stage)."
+      />
+
+      {loading ? (
+        <Glass>
+          <div style={{ fontSize: 12, color: 'var(--t3)' }}>Chargement du profil…</div>
+        </Glass>
+      ) : editing ? (
+        <Glass glow>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ac)', marginBottom: 14 }}>Modifier mon profil (blockchain)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <Inp label="Nom *" value={form.nom} onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))} />
+            <Inp label="Prénom *" value={form.prenom} onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))} />
+            <Inp
+              label="Filière"
+              placeholder="ex: CyberSécurité"
+              value={form.filiere}
+              onChange={(e) => setForm((f) => ({ ...f, filiere: e.target.value }))}
+            />
+            <Inp label="Niveau (ex. Bac+4)" value={form.niveau} onChange={(e) => setForm((f) => ({ ...f, niveau: e.target.value }))} />
+            <Inp label="Email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} I={Mail} />
+            <Inp label="Téléphone" value={form.telephone} onChange={(e) => setForm((f) => ({ ...f, telephone: e.target.value }))} I={Phone} />
+            <Inp label="Ville" value={form.ville} onChange={(e) => setForm((f) => ({ ...f, ville: e.target.value }))} I={MapPin} />
           </div>
+          <Txta label="Bio / présentation" rows={3} value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
+          <div style={{ marginTop: 12 }}>
+            <Inp
+              label="Compétences (texte libre)"
+              placeholder="ex: React, Solidity, Docker"
+              value={form.competences}
+              onChange={(e) => setForm((f) => ({ ...f, competences: e.target.value }))}
+            />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Inp label="Langues" placeholder="ex: Français, Arabe, Anglais" value={form.langues} onChange={(e) => setForm((f) => ({ ...f, langues: e.target.value }))} />
+          </div>
+          <div style={{ display: 'flex', gap: 9, marginTop: 16 }}>
+            <Btn I={Save} full loading={saving} onClick={saveOnChain}>
+              Enregistrer sur la chaîne
+            </Btn>
+            <Btn v="ghost" disabled={saving} onClick={() => { setEditing(false); loadProfile(); }}>
+              Annuler
+            </Btn>
+          </div>
+        </Glass>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 320px) 1fr', gap: 18 }}>
+          <Glass style={{ padding: 22 }}>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                background: 'var(--acd)',
+                border: '3px solid var(--brh)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 12px',
+                fontSize: 22,
+                fontWeight: 800,
+                color: 'var(--ac)',
+              }}
+            >
+              {initials}
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, textAlign: 'center', marginBottom: 2 }}>
+              {form.prenom} {form.nom}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--t2)', textAlign: 'center', marginBottom: 8 }}>{form.filiere || '—'}</div>
+            {form.niveau ? <div style={{ textAlign: 'center', marginBottom: 10 }}><Tag label={form.niveau} c="ac" /></div> : null}
+            <div style={{ borderTop: '1px solid var(--br)', paddingTop: 12, marginTop: 8 }}>
+              <div style={{ fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 6 }}>Université de rattachement</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <Building2 size={16} style={{ color: 'var(--ac)', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{uniAdmin.nom || 'Non renseignée'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)' }}>{[uniAdmin.ville, uniAdmin.email].filter(Boolean).join(' · ')}</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: 9, fontFamily: 'var(--fm)', color: 'var(--t3)', marginTop: 14, textTransform: 'uppercase' }}>Wallet</div>
+            <div style={{ fontSize: 10, fontFamily: 'var(--fm)', color: 'var(--ac)', wordBreak: 'break-all' }}>{wallet}</div>
+          </Glass>
 
-          {/* Colonne droite */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             <Card>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9 }}>À propos</div>
-              <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.7 }}>{profile.bio}</p>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Contact</div>
+              <ML label="Email" value={form.email || '—'} />
+              <ML label="Téléphone" value={form.telephone || '—'} />
+              <ML label="Ville" value={form.ville || '—'} />
             </Card>
-
             <Card>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9 }}>Compétences</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                {profile.competences.split(',').map((c, i) => (
-                  <span key={i} style={{ padding: '3px 11px', background: 'var(--acd)', border: '1px solid var(--brm)', borderRadius: 99, fontSize: 12, color: 'var(--ac)' }}>
-                    {c.trim()}
-                  </span>
-                ))}
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>À propos</div>
+              <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.7, margin: 0 }}>{form.bio || '—'}</p>
             </Card>
-
             <Card>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9 }}>Langues</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                {profile.langues.split(',').map((l, i) => (
-                  <span key={i} style={{ padding: '3px 11px', background: 'var(--skd)', border: '1px solid var(--skd)', borderRadius: 99, fontSize: 12, color: 'var(--sk)' }}>
-                    {l.trim()}
-                  </span>
-                ))}
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Compétences</div>
+              <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.7, margin: 0 }}>{form.competences || '—'}</p>
             </Card>
-
-            {/* Projets */}
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>Mes Projets</div>
-                <Btn sm I={Plus} onClick={() => setShowProjForm(!showProjForm)}>{showProjForm ? 'Fermer' : '+ Ajouter'}</Btn>
-              </div>
-
-              {showProjForm && (
-                <div style={{ padding: 13, background: 'var(--bg3)', border: '1px solid var(--brh)', borderRadius: 'var(--r2)', marginBottom: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 9 }}>
-                    <Inp label="Titre *" placeholder="ex: DApp Voting" value={newProjet.titre} onChange={e => setNewProjet(p => ({ ...p, titre: e.target.value }))} />
-                    <Inp label="Technologies" placeholder="ex: React, Solidity" value={newProjet.tech} onChange={e => setNewProjet(p => ({ ...p, tech: e.target.value }))} />
-                    <Inp label="Lien GitHub" placeholder="github.com/..." value={newProjet.lien} onChange={e => setNewProjet(p => ({ ...p, lien: e.target.value }))} />
-                  </div>
-                  <Txta label="Description" placeholder="Décrivez votre projet..." rows={2} value={newProjet.desc} onChange={e => setNewProjet(p => ({ ...p, desc: e.target.value }))} />
-                  <div style={{ display: 'flex', gap: 9, marginTop: 9 }}>
-                    <Btn sm I={Save} onClick={addProjet}>Ajouter</Btn>
-                    <Btn sm v="ghost" onClick={() => setShowProjForm(false)}>Annuler</Btn>
-                  </div>
-                </div>
-              )}
-
-              {projets.map(p => (
-                editProjId === p.id ? (
-                  <div key={p.id} style={{ padding: 12, background: 'var(--bg3)', border: '1px solid var(--brh)', borderRadius: 'var(--r2)', marginBottom: 9 }}>
-                    {/* Formulaire édition projet */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginBottom: 9 }}>
-                      <Inp label="Titre" value={editProjForm.titre} onChange={e => setEditProjForm(f => ({ ...f, titre: e.target.value }))} />
-                      <Inp label="Tech" value={editProjForm.tech} onChange={e => setEditProjForm(f => ({ ...f, tech: e.target.value }))} />
-                      <Inp label="Lien" value={editProjForm.lien} onChange={e => setEditProjForm(f => ({ ...f, lien: e.target.value }))} />
-                    </div>
-                    <Txta rows={2} value={editProjForm.desc} onChange={e => setEditProjForm(f => ({ ...f, desc: e.target.value }))} />
-                    <div style={{ display: 'flex', gap: 8, marginTop: 9 }}>
-                      <Btn sm I={Save} onClick={saveEditProjet}>Sauvegarder</Btn>
-                      <Btn sm v="ghost" onClick={() => setEditProjId(null)}>Annuler</Btn>
-                    </div>
-                  </div>
-                ) : (
-                  <div key={p.id} style={{ padding: '11px 13px', background: 'var(--bg3)', border: '1px solid var(--br)', borderRadius: 'var(--r2)', marginBottom: 9 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{p.titre}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ac)', marginBottom: 3 }}>{p.tech}</div>
-                        <div style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.5 }}>{p.desc}</div>
-                        {p.lien && <div style={{ fontSize: 10, fontFamily: 'var(--fm)', color: 'var(--sk)', marginTop: 3 }}>🔗 {p.lien}</div>}
-                      </div>
-                      <div style={{ display: 'flex', gap: 7, marginLeft: 9 }}>
-                        <Btn sm v="ghost" I={Edit2} onClick={() => { setEditProjId(p.id); setEditProjForm({ ...p }); }}>Modifier</Btn>
-                        <button onClick={() => delProjet(p.id)} style={{ color: 'var(--cr)', padding: 4 }}><Trash2 size={12} /></button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              ))}
-            </Card>
-
-            {/* Publications */}
-            <Card>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Mes Publications</div>
-              <div style={{ marginBottom: 12 }}>
-                <Txta label="Nouveau post" placeholder="Partagez une réalisation, une astuce..." rows={3} value={newPost} onChange={e => setNewPost(e.target.value)} />
-                <div style={{ marginTop: 8 }}><Btn sm I={Send} onClick={addPost}>Publier</Btn></div>
-              </div>
-              {posts.map(p => (
-                <div key={p.id} style={{ padding: '11px 13px', background: 'var(--bg3)', border: '1px solid var(--br)', borderRadius: 'var(--r2)', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.6, flex: 1 }}>{p.contenu}</p>
-                    <button onClick={() => delPost(p.id)} style={{ color: 'var(--cr)', padding: 4, marginLeft: 9 }}><Trash2 size={11} /></button>
-                  </div>
-                  <div style={{ fontSize: 10, fontFamily: 'var(--fm)', color: 'var(--t3)', marginTop: 5 }}>{p.date}</div>
-                </div>
-              ))}
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Langues</div>
+              <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.7, margin: 0 }}>{form.langues || '—'}</p>
             </Card>
           </div>
         </div>
-      ) : (
-        <Glass glow>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ac)', marginBottom: 14 }}>Modifier mon profil</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <Inp label="Nom complet" value={formP.nom} onChange={e => setFormP(f => ({ ...f, nom: e.target.value }))} />
-            <Inp label="Email" value={formP.email} onChange={e => setFormP(f => ({ ...f, email: e.target.value }))} />
-            <Inp label="Téléphone" value={formP.tel} onChange={e => setFormP(f => ({ ...f, tel: e.target.value }))} />
-            <Inp label="Ville" value={formP.ville} onChange={e => setFormP(f => ({ ...f, ville: e.target.value }))} />
-            <Sel label="Filière" value={formP.filiere} onChange={e => setFormP(f => ({ ...f, filiere: e.target.value }))} options={['Génie Logiciel', 'CyberSécurité', 'IA & BigData', 'Réseaux', 'DevOps / Cloud']} />
-            <Sel label="Niveau" value={formP.niveau} onChange={e => setFormP(f => ({ ...f, niveau: e.target.value }))} options={['Bac+3', 'Bac+4', 'Bac+5']} />
-            <Inp label="Compétences" value={formP.competences} onChange={e => setFormP(f => ({ ...f, competences: e.target.value }))} />
-            <Inp label="Langues" value={formP.langues} onChange={e => setFormP(f => ({ ...f, langues: e.target.value }))} />
-          </div>
-          <Txta label="Bio / Présentation" rows={3} value={formP.bio} onChange={e => setFormP(f => ({ ...f, bio: e.target.value }))} />
-          <div style={{ display: 'flex', gap: 9, marginTop: 12 }}>
-            <Btn I={Save} full onClick={saveProfile}>Sauvegarder</Btn>
-            <Btn v="ghost" onClick={() => setEditing(false)}>Annuler</Btn>
-          </div>
-        </Glass>
       )}
     </div>
   );

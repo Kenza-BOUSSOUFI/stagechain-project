@@ -1,5 +1,5 @@
 // src/components/pages/rh/RhOffres.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import PH from '../ui/PH';
 import Card from '../ui/Card';
 import Btn from '../ui/Btn';
@@ -14,9 +14,10 @@ import { Briefcase, Clock, Zap, Globe } from 'lucide-react';
 import { useToast } from '../common/ToastProvider';
 import { FilePlus, Eye, RefreshCw } from 'lucide-react';
 import { getContractReadOnly, getConnectedWallet, getOffreManagerContract } from '../hooks/useContract';
-
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 
 const RhOffres = () => {
+  const pollRef = useRef(false);
   const toast = useToast();
   const [offres, setOffres] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,8 @@ const RhOffres = () => {
   };
 
   const loadOffres = async () => {
-    setLoading(true);
+    const poll = pollRef.current;
+    if (!poll) setLoading(true);
     try {
       const [offreContract, accountContract, me] = await Promise.all([
         getOffreManagerContract(),
@@ -62,14 +64,12 @@ const RhOffres = () => {
     } catch (err) {
       toast(err?.reason || err?.message || 'Impossible de charger les offres', 'error');
     } finally {
-      setLoading(false);
+      if (!poll) setLoading(false);
+      pollRef.current = true;
     }
   };
 
-  useEffect(() => {
-    loadOffres();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useChainDataRefresh(loadOffres);
 
   const publishedCount = useMemo(() => offres.filter((o) => o.statut === 0).length, [offres]);
 

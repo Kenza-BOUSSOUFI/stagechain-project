@@ -1,5 +1,5 @@
 // src/components/pages/rh/RhCandidats.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import PH from '../ui/PH';
 import Card from '../ui/Card';
 import Btn from '../ui/Btn';
@@ -7,14 +7,15 @@ import Modal from '../ui/Modal';
 import Txta from '../ui/Txta';
 import Tag from '../ui/Tag';
 import ML from '../ui/ML';
-import { Save, Download, RefreshCw } from 'lucide-react';
+import { Save, Download, RefreshCw, User, MessageSquare, XCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '../common/ToastProvider';
-import { User, MessageSquare, XCircle, CheckCircle } from 'lucide-react';
 import { getConnectedWallet, getContractReadOnly, getConventionManagerContract, getOffreManagerContract } from '../hooks/useContract';
-import { pinConventionJsonToIpfs } from '../hooks/conventionApi';
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
+import { pinConventionJsonToIpfs, upsertConventionDocument } from '../hooks/conventionApi';
 import ConventionViewer from '../common/ConventionViewer';
 
 const RhCandidats = () => {
+  const pollRef = useRef(false);
   const toast = useToast();
   const [filter, setFilter] = useState('ALL');
   const [cands, setCands] = useState([]);
@@ -29,7 +30,8 @@ const RhCandidats = () => {
   const SC2 = { EN_ATTENTE: 'am', ACCEPTE: 'ac', REFUSE: 'cr' };
 
   const loadCandidatures = async () => {
-    setLoading(true);
+    const poll = pollRef.current;
+    if (!poll) setLoading(true);
     try {
       const [offreC, accountC, convC, me] = await Promise.all([
         getOffreManagerContract(),
@@ -66,11 +68,13 @@ const RhCandidats = () => {
             competences: o.competences || '-',
             status: statusLabel(Number(c.statut)),
             note: '',
-            cv: c.cidCV || '-',
-            lm: c.cidLM || '-',
             email: u.email || '-',
             tel: u.telephone || '-',
             ville: u.ville || '-',
+            bio: u.bio || '',
+            competencesProfil: u.competences || '',
+            langues: u.langues || '',
+            niveau: u.poste || '',
             conventionId: convId || null,
             convention: conv,
           });
@@ -80,14 +84,12 @@ const RhCandidats = () => {
     } catch (err) {
       toast(err?.reason || err?.message || 'Impossible de charger les candidatures', 'error');
     } finally {
-      setLoading(false);
+      if (!poll) setLoading(false);
+      pollRef.current = true;
     }
   };
 
-  useEffect(() => {
-    loadCandidatures();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useChainDataRefresh(loadCandidatures);
 
   const handle = async (id, action) => {
     const target = cands.find((c) => c.id === id);
@@ -172,6 +174,24 @@ const RhCandidats = () => {
         if (!cid) throw new Error('CID IPFS non généré');
         const tx2 = await convC.genererConvention(candId, cid);
         await tx2.wait();
+        const convId = Number(await convC.conventionParCandidature(candId));
+        if (convId > 0) {
+          try {
+            await upsertConventionDocument({
+              conventionId: convId,
+              candidatureId: candId,
+              etudiantWallet: target.etudiantWallet,
+              rhWallet,
+              adminWallet: String(etuUser.universite || ''),
+              offreTitre: target.offreTitre,
+              statut: 'EN_ATTENTE_SIGNATURES',
+              content: '',
+              cidIpfs: cid,
+            });
+          } catch (mongoErr) {
+            console.warn('Mongo optionnel (api-files):', mongoErr?.message || mongoErr);
+          }
+        }
         toast('Candidature acceptée et convention IPFS générée.', 'success');
       } else {
         const tx = await offreC.refuserCandidature(candId);
@@ -218,7 +238,7 @@ const RhCandidats = () => {
       return;
     }
     setCands((list) => list.map((x) => (x.id === noteM ? { ...x, note: noteText } : x)));
-    toast('Note enregistrée', 'success');
+    toast('Note enregistrée (locale à cette session)', 'success');
     setNoteM(null);
     setNoteText('');
   };
@@ -290,35 +310,28 @@ const RhCandidats = () => {
         </div>
       </Modal>
 
-      <Modal open={!!profM} onClose={() => setProfM(null)} title={`Profil complet — ${profM?.name}`} wide>
+      <Modal open={!!profM} onClose={() => setProfM(null)} title={`Profil — ${profM?.name}`} wide>
         {profM && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            <div>
-              <ML label="Wallet étudiant" value={profM.etudiantWallet} />
-              <ML label="Email" value={profM.email} />
-              <ML label="Téléphone" value={profM.tel} />
-              <ML label="Ville" value={profM.ville} />
-              <ML label="Filière" value={profM.filiere} />
-              <ML label="Compétences offre" value={profM.competences} />
+          <div>
+            <ML label="Wallet étudiant" value={profM.etudiantWallet} />
+            <ML label="Email" value={profM.email} />
+            <ML label="Téléphone" value={profM.tel} />
+            <ML label="Ville" value={profM.ville} />
+            <ML label="Filière" value={profM.filiere} />
+            <ML label="Niveau (profil)" value={profM.niveau || '—'} />
+            <ML label="Bio (on-chain)" value={profM.bio || '—'} />
+            <ML label="Compétences (profil on-chain)" value={profM.competencesProfil || '—'} />
+            <ML label="Langues" value={profM.langues || '—'} />
+            <ML label="Compétences requises (offre)" value={profM.competences} />
+            <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 10, marginBottom: 12 }}>
+              CV et lettre de motivation : déposés sur IPFS par l’étudiant au moment de la postulation (références on-chain sur le contrat des offres).
             </div>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 11 }}>Documents joints (IPFS)</div>
-              {[{ label: 'CID CV', file: profM.cv }, { label: 'CID Lettre de Motivation', file: profM.lm }].map((d, i) => (
-                <div key={i} style={{ padding: '11px 13px', background: 'var(--bg3)', border: '1px solid var(--br)', borderRadius: 'var(--r2)', marginBottom: 9, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{d.label}</div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--fm)', color: 'var(--t3)' }}>{d.file}</div>
-                  </div>
-                  <Btn sm v="secondary" I={Download} onClick={() => window.open(`https://ipfs.io/ipfs/${d.file}`, '_blank', 'noopener,noreferrer')}>Télécharger</Btn>
-                </div>
-              ))}
-              {profM.status === 'EN_ATTENTE' && (
-                <div style={{ marginTop: 14, display: 'flex', gap: 9 }}>
-                  <Btn v="danger" sm I={XCircle} full onClick={() => { handle(profM.id, 'REFUSE'); setProfM(null); }}>Refuser</Btn>
-                  <Btn sm I={CheckCircle} full onClick={() => { handle(profM.id, 'ACCEPTE'); setProfM(null); }}>Accepter</Btn>
-                </div>
-              )}
-            </div>
+            {profM.status === 'EN_ATTENTE' && (
+              <div style={{ display: 'flex', gap: 9 }}>
+                <Btn v="danger" sm I={XCircle} full onClick={() => { handle(profM.id, 'REFUSE'); setProfM(null); }}>Refuser</Btn>
+                <Btn sm I={CheckCircle} full onClick={() => { handle(profM.id, 'ACCEPTE'); setProfM(null); }}>Accepter</Btn>
+              </div>
+            )}
           </div>
         )}
       </Modal>

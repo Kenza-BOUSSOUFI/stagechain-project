@@ -1,38 +1,66 @@
-const API_BASE = process.env.REACT_APP_CONVENTION_API_URL || 'http://localhost:4000';
+import { apiFilesUrl, wrapApiFilesFetchError } from '../../config/apiFilesBase';
 
 async function readJson(res) {
+  const text = await res.text();
   let body = null;
   try {
-    body = await res.json();
+    body = text ? JSON.parse(text) : null;
   } catch (_) {
-    body = null;
+    body = { error: text ? text.slice(0, 500) : `Réponse non JSON (${res.status})` };
   }
   if (!res.ok) {
-    throw new Error(body?.error || `Erreur API (${res.status})`);
+    const combined = `${body?.error || ''} ${body?.hint || ''} ${text || ''}`;
+    if (/ECONNREFUSED|Could not proxy|proxy error/i.test(combined)) {
+      throw new Error(
+        'api-files n’écoute pas sur le port 4000. cd api-files → npm start, ou à la racine : npm run dev.'
+      );
+    }
+    throw new Error(body?.error || body?.hint || `Erreur API (${res.status})`);
+  }
+  if (body?.mock) {
+    throw new Error(
+      'CID convention factice (MOCK). Configurez PINATA_JWT dans api-files/.env et redémarrez le serveur api-files.'
+    );
   }
   return body;
 }
 
+/** Pousse le JSON de convention sur IPFS via l’API locale (Pinata JWT serveur). */
+export async function pinConventionJsonToIpfs(payload) {
+  let res;
+  try {
+    res = await fetch(apiFilesUrl('/api/ipfs/pin-json'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    throw wrapApiFilesFetchError(e);
+  }
+  return readJson(res);
+}
+
+/** Copie optionnelle en MongoDB (si MONGODB_URI est défini dans api-files/.env). */
 export async function upsertConventionDocument(payload) {
-  const res = await fetch(`${API_BASE}/api/conventions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  let res;
+  try {
+    res = await fetch(apiFilesUrl('/api/conventions'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    throw wrapApiFilesFetchError(e);
+  }
   return readJson(res);
 }
 
 export async function getConventionDocument(conventionId) {
-  const res = await fetch(`${API_BASE}/api/conventions/${conventionId}`);
+  let res;
+  try {
+    res = await fetch(apiFilesUrl(`/api/conventions/${conventionId}`));
+  } catch (e) {
+    throw wrapApiFilesFetchError(e);
+  }
   return readJson(res);
 }
-
-export async function pinConventionJsonToIpfs(payload) {
-  const res = await fetch(`${API_BASE}/api/ipfs/pin-json`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return readJson(res);
-}
-

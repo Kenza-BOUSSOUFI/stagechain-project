@@ -1,5 +1,5 @@
 // src/components/pages/admin/AdminUsers.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import PH from '../ui/PH';
 import Card from '../ui/Card';
 import Btn from '../ui/Btn';
@@ -10,8 +10,10 @@ import Sel from '../ui/Sel';
 import { useToast } from '../common/ToastProvider';
 import { UserPlus, Search, Wallet, User, BookOpen, Send, RefreshCw } from 'lucide-react';
 import { getContractWithSigner, getConnectedWallet } from '../hooks/useContract';
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 
 const AdminUsers = () => {
+  const pollRef = useRef(false);
   const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -28,7 +30,8 @@ const AdminUsers = () => {
   ), [users, search]);
 
   const loadUsers = async () => {
-    setLoadingList(true);
+    let isPoll = pollRef.current;
+    if (!isPoll) setLoadingList(true);
     try {
       const contract = await getContractWithSigner();
       const adminWallet = await getConnectedWallet();
@@ -56,14 +59,12 @@ const AdminUsers = () => {
     } catch (err) {
       toast(err?.reason || err?.message || 'Impossible de charger les comptes on-chain', 'error');
     } finally {
-      setLoadingList(false);
+      if (!isPoll) setLoadingList(false);
+      pollRef.current = true;
     }
   };
 
-  useEffect(() => {
-    loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useChainDataRefresh(loadUsers);
 
   const add = async () => {
     if (!form.wallet.trim() || !form.nom.trim() || !form.prenom.trim() || !form.filiere.trim()) {
@@ -74,6 +75,17 @@ const AdminUsers = () => {
     try {
       setSaving(true);
       const contract = await getContractWithSigner();
+      const me = (await getConnectedWallet()).toLowerCase();
+      const target = form.wallet.trim().toLowerCase();
+      if (target === me) {
+        toast(
+          'Impossible d’utiliser votre propre wallet : il est déjà l’admin université. Indiquez l’adresse d’un autre compte (ex. #1 Hardhat).',
+          'error'
+        );
+        setSaving(false);
+        return;
+      }
+
       let tx;
       if (form.role === 'encadrant') {
         tx = await contract.addEncadrant(form.wallet.trim(), form.nom.trim(), form.prenom.trim(), form.filiere.trim());
@@ -87,7 +99,13 @@ const AdminUsers = () => {
       setShowForm(false);
       await loadUsers();
     } catch (err) {
-      toast(err?.reason || err?.message || 'Echec de création du compte', 'error');
+      let msg = err?.reason || err?.message || 'Echec de création du compte';
+      const s = String(msg);
+      if (s.includes('missing revert data') || s.includes('deja enregistre')) {
+        msg =
+          'Transaction refusée : ce wallet est déjà enregistré sur la chaîne, ou ce n’est pas le bon réseau (31337). Utilisez un compte MetaMask vide / jamais inscrit (ex. 0x7099… pour Hardhat #1).';
+      }
+      toast(msg, 'error');
     } finally {
       setSaving(false);
     }
@@ -101,13 +119,16 @@ const AdminUsers = () => {
         </Btn>
       </PH>
 
-      <Alrt type="info" message="Création on-chain des comptes Étudiant et Encadrant par l'admin université connecté." />
+      <Alrt
+        type="info"
+        message="Création on-chain des comptes Étudiant et Encadrant par l'admin université connecté. Utilisez un wallet différent du vôtre (déjà admin) — ex. compte Hardhat #1 : 0x70997970C51812dc3A010C7d01b50e0d17dc79C8."
+      />
 
       {showForm && (
         <Card style={{ marginBottom: 15 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ac)', marginBottom: 13 }}>Enregistrer un nouveau compte</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <Inp label="Adresse Wallet *" placeholder="0x..." value={form.wallet} onChange={e => setForm(f => ({ ...f, wallet: e.target.value }))} I={Wallet} />
+            <Inp label="Adresse Wallet *" placeholder="Autre que votre wallet admin — ex. 0x70997970C51812dc3A010C7d01b50e0d17dc79C8" value={form.wallet} onChange={e => setForm(f => ({ ...f, wallet: e.target.value }))} I={Wallet} />
             <Inp label="Nom *" placeholder="NOM" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} I={User} />
             <Inp label="Prénom *" placeholder="Prénom" value={form.prenom} onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))} I={User} />
             <Sel label="Rôle" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} options={[{ v: 'etudiant', l: 'Étudiant' }, { v: 'encadrant', l: 'Encadrant Universitaire' }]} />

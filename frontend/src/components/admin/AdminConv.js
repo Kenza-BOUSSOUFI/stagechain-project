@@ -1,5 +1,5 @@
 // src/components/pages/admin/AdminConv.js
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import PH from '../ui/PH';
 import Glass from '../ui/Glass';
 import Btn from '../ui/Btn';
@@ -10,8 +10,10 @@ import Tag from '../ui/Tag';
 import { CheckCircle, Circle, Eye, Download } from 'lucide-react';
 import { useToast } from '../common/ToastProvider';
 import { getConnectedWallet, getContractReadOnly, getConventionManagerContract, getOffreManagerContract } from '../hooks/useContract';
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 
 const AdminConv = () => {
+  const pollRef = useRef(false);
   const toast = useToast();
   const [conv, setConv] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,8 @@ const AdminConv = () => {
   const [detM, setDetM] = useState(null);
 
   const loadConventions = async () => {
-    setLoading(true);
+    const poll = pollRef.current;
+    if (!poll) setLoading(true);
     try {
       const [offreC, convC, accountC, me] = await Promise.all([
         getOffreManagerContract(),
@@ -61,14 +64,12 @@ const AdminConv = () => {
     } catch (err) {
       toast(err?.reason || err?.message || 'Impossible de charger les conventions', 'error');
     } finally {
-      setLoading(false);
+      if (!poll) setLoading(false);
+      pollRef.current = true;
     }
   };
 
-  useEffect(() => {
-    loadConventions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useChainDataRefresh(loadConventions);
 
   const signAdmin = async (id) => {
     try {
@@ -89,7 +90,7 @@ const AdminConv = () => {
   return (
     <div className="fi">
       <PH title="Conventions de Stage" />
-      <Alrt type="info" message="L'admin signe en dernier. 3 signatures requises pour activer la convention." />
+      <Alrt type="info" message="Convention : JSON sur IPFS (CID on-chain). Signatures étudiant, RH et admin université requises pour finaliser." />
 
       <div style={{ display: 'grid', gap: 12 }}>
         {!loading && conv.length === 0 && (
@@ -107,11 +108,11 @@ const AdminConv = () => {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>{c.etudiant}</span>
                     {all ? <Tag label="ACTIVE" c="ac" /> : <Tag label="EN ATTENTE" c="am" />}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--t2)' }}>{c.entreprise} · {c.debut} → {c.fin}</div>
+                  <div style={{ fontSize: 12, color: 'var(--t2)' }}>{c.entreprise}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Btn sm v="ghost" I={Eye} onClick={() => setDetM(c)}>Détails</Btn>
-                  <Btn sm v="ghost" I={Download} onClick={() => window.open(`https://ipfs.io/ipfs/${c.cidConvention}`, '_blank', 'noopener,noreferrer')}>PDF</Btn>
+                  <Btn sm v="ghost" I={Download} onClick={() => window.open(`https://ipfs.io/ipfs/${c.cidConvention}`, '_blank', 'noopener,noreferrer')}>IPFS</Btn>
                 </div>
               </div>
 
@@ -128,8 +129,8 @@ const AdminConv = () => {
                 ))}
               </div>
 
-              {!c.sigAdmin && c.sigRH && c.sigEtu && (
-                <Btn I={CheckCircle} disabled={busyId === c.id} onClick={() => signAdmin(c.id)}>Signer la convention</Btn>
+              {!c.sigAdmin && (
+                <Btn I={CheckCircle} disabled={busyId === c.id} onClick={() => signAdmin(c.id)}>Signer (admin université)</Btn>
               )}
             </Glass>
           );

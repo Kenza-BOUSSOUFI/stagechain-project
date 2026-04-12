@@ -1,0 +1,13 @@
+{
+  "name": "stagechain",
+  "private": true,
+  "description": "Lance api-files (port 4000) + React (port 3000) pour éviter ECONNREFUSED sur /api/ipfs/*",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm run start --prefix api-files\" \"npm run start --prefix frontend\"",
+    "start:api": "npm run start --prefix api-files",
+    "start:web": "npm run start --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

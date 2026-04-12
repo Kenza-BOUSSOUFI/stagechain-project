@@ -86,7 +86,7 @@ function AppInner() {
       rh_certif:      <RhCertif />,
       rh_verif:       <RhVerif />,
 
-      etu_profile:    <EtuProfile user={user} />,
+      etu_profile:    <EtuProfile />,
       matching:       <Matching />,
       candidature:    <Candidature />,
       convention:     <Convention />,

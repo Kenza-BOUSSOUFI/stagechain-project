@@ -177,7 +177,18 @@ const AuthPage = ({ onBack, onLogin }) => {
       toast(`Compte créé sur la blockchain ! Bienvenue, ${newUser.nom} !`, 'success');
 
     } catch (err) {
-      const msg = err?.reason || err?.message || 'Transaction échouée';
+      let msg = err?.reason || err?.message || 'Transaction échouée';
+      const short = String(msg);
+      if (
+        short.includes('missing revert data') ||
+        short.includes('CALL_EXCEPTION') ||
+        (err?.code === 'CALL_EXCEPTION' && !err?.data)
+      ) {
+        msg =
+          'Transaction impossible : mauvais réseau MetaMask ou mauvaise adresse de contrat. ' +
+          'Utilisez le réseau local Hardhat (chainId 31337, RPC http://127.0.0.1:8545), lancez `npx hardhat node` puis le déploiement Ignition, ' +
+          'et supprimez REACT_APP_ACCOUNT_MANAGER_ADDRESS (et autres REACT_APP_*_ADDRESS) dans votre .env si vous ne déployez pas vous-même ailleurs.';
+      }
       toast(msg, 'error');
     } finally {
       setLoading(false);

@@ -7,6 +7,8 @@
     "test": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "sync:frontend": "node scripts/sync-frontend-addresses.js",
+    "deploy:ignition-local": "hardhat ignition deploy ignition/modules/StageChainDeploy.ts --network localhost --reset && node scripts/sync-frontend-addresses.js",
     "node": "hardhat node",
     "typecheck": "tsc --noEmit"
   },

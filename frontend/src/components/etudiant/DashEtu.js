@@ -1,61 +1,133 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
-
-// S-hi l-paths: ghir ../ we7da hitach etudiant o ui b jouj west components
+import React, { useCallback, useRef, useState } from 'react';
 import PH from '../ui/PH';
 import SC from '../ui/SC';
 import Card from '../ui/Card';
 import ML from '../ui/ML';
-
+import Tag from '../ui/Tag';
 import { Zap, CheckCircle, Activity, Upload } from 'lucide-react';
+import { useToast } from '../common/ToastProvider';
+import {
+  getConnectedWallet,
+  getContractReadOnly,
+  getOffreManagerContract,
+  getConventionManagerContract,
+  getSuiviManagerContract,
+} from '../hooks/useContract';
+import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 
-const DashEtu = () => (
-  <div className="fi">
-    <PH title="Tableau de Bord" subtitle="Espace Étudiant" />
+const StatutConvention = { COMPLETE: 4 };
 
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 13, marginBottom: 20 }}>
-      <SC label="Score matching" value="93%" I={Zap} color="ac" sub="Dev Blockchain" />
-      <SC label="Statut" value="ACCEPTÉ" I={CheckCircle} color="ac" />
-      <SC label="Semaine de stage" value="6 / 12" I={Activity} color="am" />
-      <SC label="Rapports soumis" value="6" I={Upload} color="sk" />
+const DashEtu = () => {
+  const toast = useToast();
+  const errOnce = useRef(false);
+  const [nbOffresActives, setNbOffresActives] = useState(0);
+  const [nbCand, setNbCand] = useState(0);
+  const [convStatus, setConvStatus] = useState('—');
+  const [nbRapports, setNbRapports] = useState(0);
+  const [entreprise, setEntreprise] = useState('—');
+  const [encadrant, setEncadrant] = useState('—');
+  const [acceptedOffre, setAcceptedOffre] = useState(null);
+
+  const loadDash = useCallback(async () => {
+    try {
+      const [offreC, accountC, convC, suiviC, me] = await Promise.all([
+        getOffreManagerContract(),
+        getContractReadOnly(),
+        getConventionManagerContract(),
+        getSuiviManagerContract(),
+        getConnectedWallet(),
+      ]);
+
+      const ids = await offreC.getAllOffres();
+      let active = 0;
+      for (const idBn of ids) {
+        const o = await offreC.getOffre(idBn);
+        if (Number(o.statut) === 0) active += 1;
+      }
+      setNbOffresActives(active);
+
+      const candIds = await offreC.getCandidaturesByEtudiant(me);
+      setNbCand(candIds.length);
+
+      let accepted = null;
+      for (const idBn of candIds) {
+        const c = await offreC.getCandidature(idBn);
+        if (Number(c.statut) === 1) {
+          const offre = await offreC.getOffre(c.offreId);
+          const rhUser = await accountC.getUser(offre.rh);
+          accepted = { titre: offre.titre || '-', entreprise: rhUser.entreprise || '-' };
+          break;
+        }
+      }
+      setAcceptedOffre(accepted);
+
+      try {
+        const cv = await convC.getConventionByEtudiant(me);
+        const complete = Number(cv.statut) === StatutConvention.COMPLETE;
+        setConvStatus(complete ? 'CONVENTION ACTIVE' : 'EN SIGNATURE');
+        const rhUser = await accountC.getUser(cv.rh);
+        setEntreprise(rhUser.entreprise || '—');
+        setEncadrant(cv.encadrant && cv.encadrant !== '0x0000000000000000000000000000000000000000' ? cv.encadrant : 'Non affecté');
+      } catch (_) {
+        setConvStatus('AUCUNE');
+        setEntreprise('—');
+        setEncadrant('—');
+      }
+
+      const rapIds = await suiviC.getRapportsByEtudiant(me);
+      setNbRapports(rapIds.length);
+    } catch (err) {
+      console.warn('[DashEtu]', err);
+      if (!errOnce.current) {
+        errOnce.current = true;
+        toast(err?.reason || err?.message || 'Impossible de charger le tableau de bord', 'error');
+      }
+    }
+  }, [toast]);
+
+  useChainDataRefresh(loadDash);
+
+  const candLabel = nbCand ? `${nbCand} candidature(s)` : 'Aucune';
+
+  return (
+    <div className="fi">
+      <PH title="Tableau de Bord" subtitle="Espace Étudiant — données on-chain (rafraîchissement auto)" />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 13, marginBottom: 20 }}>
+        <SC label="Offres actives (réseau)" value={String(nbOffresActives)} I={Zap} color="ac" sub="page Offres pour postuler" />
+        <SC label="Mes candidatures" value={String(nbCand)} I={CheckCircle} color="ac" sub={candLabel} />
+        <SC label="Convention" value={convStatus} I={Activity} color="am" />
+        <SC label="Rapports déposés" value={String(nbRapports)} I={Upload} color="sk" sub="Suivi on-chain" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <Card>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Stage & convention</div>
+          {acceptedOffre ? (
+            <>
+              <ML label="Offre acceptée" value={acceptedOffre.titre} />
+              <ML label="Entreprise" value={acceptedOffre.entreprise} />
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--t3)', marginBottom: 10 }}>Aucune candidature acceptée pour le moment.</div>
+          )}
+          <ML label="Entreprise (convention)" value={entreprise} />
+          <ML label="Encadrant (wallet)" value={encadrant} />
+          <div style={{ marginTop: 10 }}>
+            <Tag label={convStatus} c={convStatus === 'CONVENTION ACTIVE' ? 'ac' : 'am'} />
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Raccourcis</div>
+          <div style={{ fontSize: 12, color: 'var(--t2)' }}>
+            Les compteurs se mettent à jour automatiquement quand la blockchain change (nouvelle candidature, signatures, dépôt de rapport).
+          </div>
+        </Card>
+      </div>
     </div>
-
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-      <Card>
-        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Progression du stage</div>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-            <span style={{ fontSize: 11, color: 'var(--t2)' }}>Semaine 6 / 12</span>
-            <span style={{ fontSize: 11, color: 'var(--ac)', fontFamily: 'var(--fm)' }}>50%</span>
-          </div>
-          <div style={{ height: 7, background: 'var(--bg3)', borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '50%', background: 'linear-gradient(90deg,var(--ac),var(--sk))', borderRadius: 99 }} />
-          </div>
-        </div>
-        <ML label="Entreprise" value="TechCorp SA" />
-        <ML label="Encadrant" value="Dr. Hassan Moufid" />
-        <ML label="Début" value="15 Jan 2026" />
-        <ML label="Fin prévue" value="15 Avr 2026" />
-      </Card>
-
-      <Card>
-        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Activités récentes</div>
-        {[
-          { l: 'Rapport semaine 6 soumis', t: "Aujourd'hui", c: 'ac' },
-          { l: 'Commentaire encadrant reçu', t: 'Hier', c: 'sk' },
-          { l: 'Convention active', t: '15 Jan', c: 'am' }
-        ].map((a, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--br)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: `var(--${a.c})`, flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: 'var(--t2)' }}>{a.l}</span>
-            </div>
-            <span style={{ fontSize: 10, fontFamily: 'var(--fm)', color: 'var(--t3)' }}>{a.t}</span>
-          </div>
-        ))}
-      </Card>
-    </div>
-  </div>
-);
+  );
+};
 
 export default DashEtu;

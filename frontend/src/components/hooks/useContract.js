@@ -6,37 +6,21 @@ import SC3Artifact from '../data/SC3_ConventionManagerABI.json';
 import SC4Artifact from '../data/SC4_SuiviManagerABI.json';
 import SC5Artifact from '../data/SC5_RapportManagerABI.json';
 import SC6Artifact from '../data/SC6_CertifManagerABI.json';
-
-const ACCOUNT_MANAGER_ABI = [
-  'function getRole(address _wallet) view returns (uint8)',
-  'function getUser(address _wallet) view returns ((address wallet,uint8 role,string nom,string prenom,string filiere,string entreprise,string email,string telephone,string poste,string ville,address universite,bool isActive,uint256 registeredAt))',
-  'function addStudent(address _wallet,string _nom,string _prenom,string _filiere)',
-  'function addEncadrant(address _wallet,string _nom,string _prenom,string _filiere)',
-  'function getStudentsByUniversite(address _uni) view returns (address[])',
-  'function getEncadrantsByUniversite(address _uni) view returns (address[])',
-  'function registerUniversite(string _nom,string _ville,string _adresse,string _email,string _telephone,string _siteWeb)',
-  'function registerRH(string _nom,string _prenom,string _entreprise,string _poste,string _email,string _telephone,string _ville)',
-];
+import deployedLocal from '../../data/deployedLocal.json';
+import ACCOUNT_MANAGER_ABI from '../../data/AccountManagerABI.json';
 
 // ── Réseau & adresses ────────────────────────────────────────────────────────
-// Par défaut, ces adresses correspondent au déploiement local Hardhat (chainId 31337):
-// `blockchain/ignition/deployments/chain-31337/deployed_addresses.json`
+// Adresses du dernier déploiement local (synchronisées par `npm run deploy:ignition-local` dans blockchain/).
+// Fichier source : blockchain/ignition/deployments/chain-31337/deployed_addresses.json → src/data/deployedLocal.json
 //
-// Pour utiliser Sepolia (ou autre), définis dans `.env` du front:
-// - REACT_APP_CHAIN_ID=11155111
-// - REACT_APP_ACCOUNT_MANAGER_ADDRESS=0x...
-// - REACT_APP_OFFRE_MANAGER_ADDRESS=0x...
-// - REACT_APP_CONVENTION_MANAGER_ADDRESS=0x...
-// - REACT_APP_RAPPORT_MANAGER_ADDRESS=0x...
-// - REACT_APP_SUIVI_MANAGER_ADDRESS=0x...
-// - REACT_APP_CERTIF_MANAGER_ADDRESS=0x...
+// En `npm start`, on utilise ce fichier sauf si REACT_APP_USE_DEPLOYED_ENV=1 (alors variables REACT_APP_*_ADDRESS).
 const DEFAULT_ADDRESSES = {
-  AccountManager: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-  OffreManager: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-  ConventionManager: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-  RapportManager: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-  SuiviManager: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
-  CertifManager: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
+  AccountManager: deployedLocal['StageChainModule#AccountManager'],
+  OffreManager: deployedLocal['StageChainModule#OffreManager'],
+  ConventionManager: deployedLocal['StageChainModule#ConventionManager'],
+  RapportManager: deployedLocal['StageChainModule#RapportManager'],
+  SuiviManager: deployedLocal['StageChainModule#SuiviManager'],
+  CertifManager: deployedLocal['StageChainModule#CertifManager'],
 };
 
 function envInt(name) {
@@ -46,7 +30,21 @@ function envInt(name) {
   return Number.isFinite(v) ? v : null;
 }
 
-const EXPECTED_CHAIN_ID = envInt('REACT_APP_CHAIN_ID');
+/** En `npm start`, on impose 31337 si rien n’est défini, pour éviter MetaMask sur un autre réseau + mauvaise adresse de contrat. */
+function resolveExpectedChainId() {
+  const fromEnv = envInt('REACT_APP_CHAIN_ID');
+  if (fromEnv != null) return fromEnv;
+  if (process.env.NODE_ENV === 'development') return 31337;
+  return null;
+}
+
+const EXPECTED_CHAIN_ID = resolveExpectedChainId();
+
+/** En dev, ignore les REACT_APP_*_ADDRESS (souvent laissées dans les variables système Windows). */
+function allowEnvContractAddresses() {
+  if (process.env.NODE_ENV !== 'development') return true;
+  return process.env.REACT_APP_USE_DEPLOYED_ENV === '1';
+}
 
 function resolveAddress(key) {
   const envKey = {
@@ -58,7 +56,8 @@ function resolveAddress(key) {
     CertifManager: 'REACT_APP_CERTIF_MANAGER_ADDRESS',
   }[key];
 
-  const candidate = (envKey && process.env[envKey]) ? process.env[envKey] : DEFAULT_ADDRESSES[key];
+  const fromEnv = allowEnvContractAddresses() && envKey && process.env[envKey];
+  const candidate = fromEnv ? process.env[envKey] : DEFAULT_ADDRESSES[key];
   if (!ethers.isAddress(candidate)) {
     throw new Error(`Adresse de contrat invalide pour ${key}: ${candidate || '(vide)'}`);
   }
@@ -173,24 +172,43 @@ export async function getConnectedWallet() {
 // ── Fetch utilisateur depuis la blockchain ──────────────────────────────────
 export async function fetchUserFromChain(walletAddress) {
   const contract = await getContractReadOnly();
-  const roleNum = Number(await contract.getRole(walletAddress));
+  let roleNum;
+  try {
+    roleNum = Number(await contract.getRole(walletAddress));
+  } catch (e) {
+    console.warn('[fetchUserFromChain] getRole:', e);
+    throw new Error(
+      'Impossible de lire le contrat AccountManager. Vérifiez le réseau 31337, l’adresse dans deployedLocal.json, puis npm run deploy:ignition-local dans blockchain/.'
+    );
+  }
 
   if (roleNum === 0) return null;
 
-  const u = await contract.getUser(walletAddress);
+  let u;
+  try {
+    u = await contract.getUser(walletAddress);
+  } catch (e) {
+    console.warn('[fetchUserFromChain] getUser:', e);
+    throw new Error(
+      'Données utilisateur illisibles (ABI / contrat). Relancez : cd blockchain && npx hardhat compile && npm run deploy:ignition-local, puis redémarrez le front.'
+    );
+  }
 
   return {
-    wallet:     walletAddress,
-    role:       ROLE_MAP[roleNum],
-    nom:        u.nom,
-    prenom:     u.prenom,
-    filiere:    u.filiere,
-    entreprise: u.entreprise,
-    email:      u.email,
-    telephone:  u.telephone,
-    poste:      u.poste,
-    ville:      u.ville,
-    universite: u.universite,
-    isActive:   u.isActive,
+    wallet:       walletAddress,
+    role:         ROLE_MAP[roleNum],
+    nom:          u.nom,
+    prenom:       u.prenom,
+    filiere:      u.filiere,
+    entreprise:   u.entreprise,
+    email:        u.email,
+    telephone:    u.telephone,
+    poste:        u.poste,
+    ville:        u.ville,
+    universite:   u.universite,
+    isActive:     u.isActive,
+    bio:          u.bio,
+    competences:  u.competences,
+    langues:      u.langues,
   };
 }

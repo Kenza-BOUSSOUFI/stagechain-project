@@ -1,6 +1,9 @@
 node_modules/
 frontend/node_modules/
+api-files/node_modules/
 blockchain/node_modules/
 blockchain/artifacts/
 blockchain/cache/
 .env
+frontend/.env
+api-files/.env
