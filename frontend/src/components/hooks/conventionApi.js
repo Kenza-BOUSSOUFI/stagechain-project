@@ -64,3 +64,21 @@ export async function getConventionDocument(conventionId) {
   }
   return readJson(res);
 }
+
+
+/** Pin n'importe quel fichier (PDF) via POST multipart. */
+export async function pinFileToIpfs(file) {
+  let res;
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    res = await fetch(apiFilesUrl('/api/ipfs/pin-pdf'), {
+      method: 'POST',
+      body: formData,
+    });
+  } catch (e) {
+    throw wrapApiFilesFetchError(e);
+  }
+  return readJson(res);
+}
+

@@ -155,8 +155,8 @@ contract ConventionManager {
             "ConventionManager: pas votre universite"
         );
         require(
-            conv.statut != StatutConvention.COMPLETE,
-            "ConventionManager: convention deja complete"
+            conv.statut == StatutConvention.COMPLETE,
+            "ConventionManager: convention non complete"
         );
         require(
             accountManager.isAuthorized(_encadrant, AccountManager.Role.ENCADRANT),

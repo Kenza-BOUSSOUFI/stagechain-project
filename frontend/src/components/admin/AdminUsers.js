@@ -8,7 +8,7 @@ import Tag from '../ui/Tag';
 import Alrt from '../ui/Alrt';
 import Sel from '../ui/Sel';
 import { useToast } from '../common/ToastProvider';
-import { UserPlus, Search, Wallet, User, BookOpen, Send, RefreshCw } from 'lucide-react';
+import { UserPlus, Search, Wallet, User, BookOpen, Send, RefreshCw, GraduationCap, Users, UserX } from 'lucide-react';
 import { getContractWithSigner, getConnectedWallet } from '../hooks/useContract';
 import { useChainDataRefresh } from '../hooks/useChainDataRefresh';
 
@@ -22,12 +22,16 @@ const AdminUsers = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ wallet: '', nom: '', prenom: '', role: 'etudiant', filiere: '' });
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('etudiant');
 
   const filtered = useMemo(() => users.filter(u =>
     `${u.nom} ${u.prenom}`.toLowerCase().includes(search.toLowerCase()) ||
     u.filiere.toLowerCase().includes(search.toLowerCase()) ||
     u.wallet.toLowerCase().includes(search.toLowerCase())
   ), [users, search]);
+
+  const filteredStudents = filtered.filter(u => u.role === 'etudiant');
+  const filteredEncadrants = filtered.filter(u => u.role === 'encadrant');
 
   const loadUsers = async () => {
     let isPoll = pollRef.current;
@@ -141,32 +145,111 @@ const AdminUsers = () => {
         </Card>
       )}
 
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 700 }}>Comptes ({filtered.length})</span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button 
+            disabled={loadingList}
+            onClick={() => setActiveTab('etudiant')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, border: 'none',
+              cursor: 'pointer', fontWeight: 700, fontSize: 13,
+              background: activeTab === 'etudiant' ? 'var(--ac)' : 'var(--bg3)',
+              color: activeTab === 'etudiant' ? '#000' : 'var(--t2)',
+              boxShadow: activeTab === 'etudiant' ? '0 0 15px rgba(0, 255, 170, 0.2)' : 'none',
+              transition: 'all 0.2s'
+            }}>
+            <GraduationCap size={18} /> Étudiants
+            <div style={{ 
+              background: activeTab === 'etudiant' ? 'rgba(0,0,0,0.1)' : 'var(--bg)', 
+              color: activeTab === 'etudiant' ? '#000' : 'var(--t3)',
+              width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 11, marginLeft: 4 
+            }}>
+              {filteredStudents.length}
+            </div>
+          </button>
+          
+          <button 
+            disabled={loadingList}
+            onClick={() => setActiveTab('encadrant')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, border: 'none',
+              cursor: 'pointer', fontWeight: 700, fontSize: 13,
+              background: activeTab === 'encadrant' ? 'var(--ac)' : 'var(--bg3)',
+              color: activeTab === 'encadrant' ? '#000' : 'var(--t2)',
+              boxShadow: activeTab === 'encadrant' ? '0 0 15px rgba(0, 255, 170, 0.2)' : 'none',
+              transition: 'all 0.2s'
+            }}>
+            <Users size={18} /> Encadrants
+            <div style={{ 
+              background: activeTab === 'encadrant' ? 'rgba(0,0,0,0.1)' : 'var(--bg)', 
+              color: activeTab === 'encadrant' ? '#000' : 'var(--t3)',
+              width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 11, marginLeft: 4 
+            }}>
+              {filteredEncadrants.length}
+            </div>
+          </button>
+        </div>
+        
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ width: 220 }}>
             <Inp placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} I={Search} />
-            <Btn sm v="ghost" I={RefreshCw} onClick={loadUsers} disabled={loadingList}>Rafraîchir</Btn>
           </div>
+          <Btn sm v="ghost" I={RefreshCw} onClick={loadUsers} disabled={loadingList}>Rafraîchir</Btn>
+        </div>
+      </div>
+
+      <Card>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {activeTab === 'etudiant' ? <GraduationCap size={16} /> : <Users size={16} />}
+          {activeTab === 'etudiant' ? 'Étudiants' : 'Encadrants'} — {activeTab === 'etudiant' ? filteredStudents.length : filteredEncadrants.length} résultat(s)
         </div>
 
-        <div style={{ display: 'grid', gap: 8 }}>
-          {!loadingList && filtered.length === 0 && (
-            <div style={{ fontSize: 12, color: 'var(--t3)', padding: '10px 4px' }}>
-              Aucun compte trouvé pour votre université.
+        <div style={{ display: 'grid', gap: 12 }}>
+          {!loadingList && (activeTab === 'etudiant' ? filteredStudents : filteredEncadrants).length === 0 && (
+            <div style={{ fontSize: 13, color: 'var(--t3)', padding: '10px 4px' }}>
+              Aucun résultat trouvé.
             </div>
           )}
-          {filtered.map(u => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', background: 'var(--bg3)', border: '1px solid var(--br)', borderRadius: 'var(--r2)' }}>
-              <div style={{ width: 31, height: 31, borderRadius: 8, background: 'var(--acd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'var(--ac)' }}>
+          {(activeTab === 'etudiant' ? filteredStudents : filteredEncadrants).map(u => (
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', background: 'var(--bg)', borderRadius: 'var(--r2)', border: '1px solid transparent' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--acd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: 'var(--ac)' }}>
                 {(u.nom?.[0] || 'U').toUpperCase()}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 1 }}>{u.prenom} {u.nom}</div>
-                <div style={{ fontSize: 10, fontFamily: 'var(--fm)', color: 'var(--t3)' }}>{u.wallet} · {u.filiere}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3, color: '#fff' }}>{u.prenom} {u.nom}</div>
+                <div style={{ fontSize: 11, fontFamily: 'var(--fm)', color: 'var(--t3)' }}>{u.wallet} · {u.filiere}</div>
               </div>
-              <Tag label={u.role === 'encadrant' ? 'Encadrant' : 'Étudiant'} c={u.role === 'encadrant' ? 'sk' : 'ac'} />
-              <Tag label={u.isActive ? 'Actif' : 'Inactif'} c={u.isActive ? 'ac' : 'cr'} />
+              
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: u.isActive ? 'var(--ac)' : 'var(--cr)', textTransform: 'uppercase', marginRight: 16 }}>
+                {u.isActive ? 'ACTIF' : 'INACTIF'}
+              </div>
+              
+              {u.isActive && (
+                <button 
+                  onClick={async () => {
+                    try {
+                      setSaving(true);
+                      const contract = await getContractWithSigner();
+                      const tx = await contract.deactivateUser(u.wallet);
+                      toast('Transaction envoyée...', 'loading');
+                      await tx.wait();
+                      toast('Compte désactivé avec succès.', 'success');
+                      await loadUsers();
+                    } catch (err) {
+                      toast(err?.reason || err?.message || 'Échec de la désactivation', 'error');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  style={{ 
+                    border: '1px solid rgba(255, 60, 60, 0.3)', background: 'rgba(255, 60, 60, 0.05)', color: '#ff4d4d', 
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    opacity: saving ? 0.5 : 1
+                  }}>
+                  <UserX size={14} /> Désactiver
+                </button>
+              )}
             </div>
           ))}
         </div>

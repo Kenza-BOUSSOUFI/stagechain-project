@@ -36,6 +36,14 @@ const Convention = () => {
       const rhUser = await accountC.getUser(c.rh);
       const cand = await offreC.getCandidature(c.candidatureId);
       const offre = await offreC.getOffre(cand.offreId);
+      let encName = 'Non affecté';
+      if (c.encadrant && c.encadrant !== '0x0000000000000000000000000000000000000000') {
+        try {
+          const encU = await accountC.getUser(c.encadrant);
+          encName = `${encU.nom} ${encU.prenom}`;
+        } catch(e) {}
+      }
+
       setConv({
         id: Number(c.id),
         cidConvention: c.cidConvention,
@@ -45,7 +53,7 @@ const Convention = () => {
         etudiant: me,
         entreprise: rhUser.entreprise || '-',
         titreOffre: offre.titre || '-',
-        encadrant: c.encadrant,
+        encadrant: encName,
       });
     } catch (err) {
       setConv(null);
@@ -104,7 +112,7 @@ const Convention = () => {
             <ML label="Étudiant (wallet)" value={conv.etudiant} />
             <ML label="Entreprise" value={conv.entreprise} />
             <ML label="Offre" value={conv.titreOffre} />
-            <ML label="Encadrant" value={conv.encadrant === '0x0000000000000000000000000000000000000000' ? 'Non affecté' : conv.encadrant} />
+            <ML label="Encadrant" value={conv.encadrant} />
           </div>
           <div style={{ paddingLeft: 18 }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 11 }}>Signatures</div>

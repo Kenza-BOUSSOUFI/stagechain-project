@@ -86,7 +86,9 @@ const Matching = () => {
       toast(err?.reason || err?.message || 'Impossible de charger les offres', 'error');
     } finally {
       if (!poll) setLoading(false);
-      pollRef.current = true;
+      pollRef.current = true
+      setLoading(false);
+
     }
   };
 

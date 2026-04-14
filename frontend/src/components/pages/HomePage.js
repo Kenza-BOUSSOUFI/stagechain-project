@@ -108,10 +108,7 @@ const HomePage = ({ onConnect, onAbout }) => {
 
       {/* HERO */}
       <section style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '90px 24px 70px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'var(--acd)', border: '1px solid var(--brh)', borderRadius: 99, fontSize: 11, fontFamily: 'var(--fm)', color: 'var(--ac)', letterSpacing: '0.1em', marginBottom: 26 }}>
-          <div className="blink" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ac)' }} />
-          EMSI Marrakech · Filière CyberSécurité · Groupe 3 · 2025–2026
-        </div>
+        
 
         <h1 className="float" style={{ fontSize: 60, fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 0.88, marginBottom: 20 }}>
           Stage<span style={{ color: 'var(--ac)' }}>Chain</span>

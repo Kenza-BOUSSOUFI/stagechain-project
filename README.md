@@ -1,111 +1,232 @@
 # StageChain
 
-Plateforme décentralisée de gestion de stages (Hardhat local + React + IPFS Pinata).
-
-## Emplacement des dossiers
-
-| Partie | Dossier |
-|--------|---------|
-| **Smart contracts (Solidity)** | `blockchain/` — contrats dans `blockchain/contracts/` (ex. `SC1_AccountManager.sol`, `SC2_OffreManager.sol`, `SC3_ConventionManager.sol`, …) |
-| **Frontend (React)** | `frontend/` |
-| **API fichiers / IPFS (Express)** | `api-files/` — Pinata (`/api/ipfs/*`), MongoDB optionnel pour l’index des conventions (`/api/conventions`) |
+Plateforme décentralisée de gestion des stages (local Hardhat + React).
 
 ---
 
-## Fonctionnalités actuelles (résumé)
+### 1. Phases déjà implémentées
 
-Pour chaque point : rôle métier bref, puis **fichier** et **fonction** (ou équivalent) qui en porte la responsabilité.
+- **Connexion wallet & vérification réseau**
+  - Connexion via MetaMask sur le réseau **Hardhat local (chainId 31337)**.
+  - Vérification que les contrats sont bien déployés aux adresses du fichier `blockchain/ignition/deployments/chain-31337/deployed_addresses.json`.
+  - Si un contrat est introuvable → message clair: « Contrat X introuvable… Redéployez puis rechargez le front ».
 
-### 1. Connexion wallet, réseau et chargement des contrats
+- **Gestion des comptes & rôles (SC1_AccountManager.sol)**
+  - Rôles gérés: **étudiant, encadrant, RH, admin université**.
+  - Récupération du rôle et des infos utilisateur depuis la blockchain.
+  - Si le wallet connecté n’est pas enregistré → affichage d’une **fenêtre d’inscription** adaptée au rôle choisi.
 
-- Vérification du chainId, instanciation ethers des contrats déployés.
-- **Fichier :** `frontend/src/components/hooks/useContract.js` — fonctions `getProvider`, `getConnectedWallet`, `getOffreManagerContract`, `getConventionManagerContract`, `getContractReadOnly`, `fetchUserFromChain`, etc.
+- **Inscription Admin université & RH**
+  - Formulaires enrichis avec des champs plus réalistes :
+    - Admin université: `nom`, `ville`, `adresse`, `email`, `telephone`, `siteWeb`.
+    - RH: `nom`, `prenom`, `entreprise`, `poste`, `email`, `telephone`, `ville`.
+  - Ces champs sont **stockés on-chain** dans `SC1_AccountManager.sol` et exposés au front.
 
-### 2. Authentification et inscription par rôle
+- **Gestion des comptes étudiants & encadrants (Admin)**
+  - L’admin université peut **créer des comptes étudiant et encadrant** (wallet + nom + prénom + filière).
+  - Liste des étudiants/encadrants de l’université chargée **depuis la blockchain**.
 
-- Saisie du wallet, inscription admin université / RH / (étudiant & encadrant créés par admin selon les écrans existants).
-- **Fichier :** `frontend/src/components/pages/AuthPage.js` — logique de login / formulaires d’inscription.
-- **Contrat :** `blockchain/contracts/SC1_AccountManager.sol` — `registerUniversite`, `registerRH`, `addStudent`, `addEncadrant`, `getUser`, `getRole`, `updateStudentProfile`.
+- **Gestion des offres de stage (RH – SC2_OffreManager.sol)**
+  - RH peut publier des offres avec: `titre`, `domaine`, `competences`, `dureeJours`, `nbPlaces`.
+  - Affichage des offres existantes côté RH (filtrées par RH connecté) et côté étudiant (offres actives).
 
-### 3. Publication d’offres par le RH
+- **Candidatures & sélection (SC2_OffreManager.sol)**
+  - Étudiant peut **postuler** à une offre.
+  - RH voit la liste des candidatures, peut **accepter** ou **refuser**.
 
-- Champs alignés avec le formulaire : titre, domaine, compétences, durée (jours), nombre de places.
-- **Fichier :** `frontend/src/components/rh/RhOffres.js` — `publish`, `loadOffres`.
-- **Contrat :** `SC2_OffreManager.sol` — `publierOffre`.
-
-### 4. Liste de toutes les offres actives pour l’étudiant + filtres (plus de matching)
-
-- Toutes les offres `ACTIVE` sont listées ; filtres locaux : titre, domaine (liste identique à la publication RH), compétences (recherche texte), durée maximale en jours.
-- **Fichier :** `frontend/src/components/etudiant/Matching.js` — `loadOffres`, `offresFiltrees` (via `useMemo`), UI des filtres.
-- **Contrat :** `SC2_OffreManager.sol` — `getAllOffres`, `getOffre`.
-
-### 5. Profil étudiant modifiable on-chain et université de rattachement
-
-- L’admin qui crée l’étudiant fixe `universite` = son wallet (non modifiable par l’étudiant). L’étudiant met à jour nom, prénom, filière, contact, niveau, bio, compétences et langues via une transaction.
-- **Fichier :** `frontend/src/components/etudiant/EtuProfile.js` — `loadProfile`, `saveOnChain` (appelle `getUniversite` pour afficher le nom de l’établissement).
-- **Contrat :** `SC1_AccountManager.sol` — `addStudent` (rattachement), `updateStudentProfile`, `getUniversite`.
-
-### 6. Candidature : CV et lettre de motivation sur IPFS, références on-chain
-
-- Les PDF sont uploadés via **api-files** (SDK Pinata, IPFS public) ; seuls les **CID** sont passés à la transaction `postuler`.
-- **Fichier :** `frontend/src/services/pinataService.js` — `uploadFileToIPFS` (appelle `api-files` / `pin-pdf`, JWT Pinata côté serveur).
-- **Fichier :** `frontend/src/components/etudiant/Matching.js` — `confirmPostuler` (upload puis `contract.postuler`).
-- **Contrat :** `SC2_OffreManager.sol` — `postuler(_offreId, _cidCV, _cidLM)`.
-
-### 7. Suivi des candidatures côté étudiant
-
-- Liste on-chain (offre, entreprise, date, statut) ; pas d’affichage CV/LM sur cet écran (fichiers uniquement à la postulation).
-- **Fichier :** `frontend/src/components/etudiant/Candidature.js` — `loadCandidatures`.
-- **Contrat :** `SC2_OffreManager.sol` — `getCandidaturesByEtudiant`, `getCandidature`, `getOffre`.
-
-### 8. Gestion des candidatures côté RH (accepter / refuser)
-
-- **Fichier :** `frontend/src/components/rh/RhCandidats.js` — `loadCandidatures`, `handle` (acceptation / refus).
-- **Contrat :** `SC2_OffreManager.sol` — `selectionnerEtudiant`, `refuserCandidature`.
-
-### 9. Convention de stage : génération JSON sur IPFS + enregistrement du CID on-chain
-
-- À l’acceptation, le JSON descriptif est épinglé sur IPFS via l’API locale, puis le CID est passé à `genererConvention`.
-- **Fichier :** `frontend/src/components/hooks/conventionApi.js` — `pinConventionJsonToIpfs` (URL de base : `REACT_APP_API_FILES_URL` ou `REACT_APP_CONVENTION_API_URL`).
-- **Fichier :** `frontend/src/components/rh/RhCandidats.js` — dans `handle`, après `selectionnerEtudiant`, appel `pinConventionJsonToIpfs` puis `convC.genererConvention`.
-- **API :** `api-files/index.js` — route `POST /api/ipfs/pin-json`.
-- **Contrat :** `SC3_ConventionManager.sol` — `genererConvention` (le `admin` associé est l’admin université de l’étudiant, lu depuis `AccountManager`).
-
-### 10. Signatures tripartites (étudiant, RH, admin université)
-
-- Les trois signatures mettent à jour l’état on-chain ; le document détaillé reste le JSON sur IPFS (CID stocké dans la convention).
-- **Étudiant —** `frontend/src/components/etudiant/Convention.js` — `signEtudiant` → `signerParEtudiant`.
-- **RH —** `frontend/src/components/rh/RhCandidats.js` — `signerConventionRH` → `signerParRH`.
-- **Admin université —** `frontend/src/components/admin/AdminConv.js` — `signAdmin` → `signerParAdmin`.
-- **Contrat :** `SC3_ConventionManager.sol` — `signerParEtudiant`, `signerParRH`, `signerParAdmin`, `_updateStatut` (convention `COMPLETE` lorsque les trois sont signées).
-
-### 11. Visualisation du JSON de convention (IPFS)
-
-- **Fichier :** `frontend/src/components/common/ConventionViewer.js` — chargement `https://ipfs.io/ipfs/{cid}` et rendu lisible / impression.
-
-### 12. API `api-files` (pinning serveur, optionnel pour PDF)
-
-- Utile pour le JSON de convention depuis le front ; endpoint PDF disponible pour d’autres usages (multipart `file`).
-- **Fichier :** `api-files/index.js` — `POST /api/ipfs/pin-json`, `POST /api/ipfs/pin-pdf`, `GET /health`.
+- **Conventions de stage (SC3_ConventionManager.sol)**
+  - Lorsqu’un étudiant est accepté, le RH **génère automatiquement une convention** liée à l’offre.
+  - La convention peut être **signée** par:
+    - l’étudiant,
+    - le RH,
+    - l’admin université.
+  - La signature est possible même si aucun encadrant n’est encore affecté.
+  - Un **PDF de convention** est généré côté navigateur (**jsPDF**) et utilisé pour garder une trace de la convention.
 
 ---
 
-## Démarrage rapide
+### 2. Architecture globale du projet
 
-1. **Blockchain :** `cd blockchain` → `npm install` → `npx hardhat node` (terminal dédié). Puis **`npm run deploy:ignition-local`** : compile/déploie sur localhost et met à jour automatiquement **`frontend/src/data/deployedLocal.json`** (le front lit ce fichier pour éviter les erreurs d’adresse de contrat). Alternative manuelle : `npx hardhat compile` puis `npx hardhat ignition deploy … --reset` puis `npm run sync:frontend`.
-2. **API fichiers (obligatoire pour CV/LM et conventions IPFS) :** `cd api-files` → `npm install` → copier `.env.example` en `.env` (`PINATA_JWT`, `ALLOW_MOCK_IPFS_CID=0` pour Pinata réel) → **`npm start`** (port **4000**). Si vous ne lancez que React, le proxy affichera **ECONNREFUSED** : rien n’écoute sur 4000.
-3. **Frontend :** `cd frontend` → `npm install` → `npm start` (port 3000). Les appels `/api/...` sont proxifiés vers **:4000** ; **`api-files` doit donc tourner en parallèle.**
-4. **Démarrer front + API en une commande :**
-   - **Depuis `frontend/` :** `npm run start:with-api` (lance `api-files` sur 4000 et React sur 3000).
-   - **Depuis la racine du dépôt :** `npm install` puis **`npm run dev`** (même effet).
+- **Dossier `blockchain/`**
+  - Projet Hardhat (Solidity, tests, déploiement).
+  - Contrats principaux utilisés actuellement:
+    - `SC1_AccountManager.sol` : comptes, rôles, profils (admin, RH, étudiant, encadrant).
+    - `SC2_OffreManager.sol` : offres de stage et candidatures.
+    - `SC3_ConventionManager.sol` : conventions de stage et signatures.
+  - **Ignition** (déploiement) :
+    - `ignition/deployments/chain-31337/deployed_addresses.json` : adresses des contrats sur le réseau local Hardhat.
 
-Le **JWT Pinata** reste dans **`api-files/.env`** (`PINATA_JWT`), pas dans le front.
+- **Dossier `stagechain-front/`**
+  - Application React (Create React App).
+  - Intégration Web3 via `ethers.js` et MetaMask.
+  - Rôle principal: interface utilisateur pour admin université, RH et étudiant.
 
-MetaMask : réseau local `http://127.0.0.1:8545`, chain ID **31337**.
+- **Dossier `convention-api/`**
+  - API Express locale (port **4000** par défaut).
+  - **MongoDB Atlas** (Cloud) : stocke les métadonnées des conventions. La connexion utilise un lien standard (ex: `mongodb://...`) défini dans `MONGODB_URI` pour contourner les restrictions DNS des réseaux sécurisés (écoles, entreprises). L'IP doit être autorisée sur Atlas.
 
 ---
 
-## Documentation complémentaire
+### 3. Fichiers front importants
 
-- Détails Hardhat / tests : `blockchain/README.md`
-- Ancienne mention `convention-api` : le dossier a été renommé en **`api-files`**. La convention reste **CID on-chain** + JSON sur **IPFS** ; une **copie d’index** peut aller dans MongoDB (`/api/conventions`) si `MONGODB_URI` est défini.
+- **Hooks Web3**
+  - `stagechain-front/src/components/hooks/useContract.js`
+    - Centralise la connexion à MetaMask (provider + signer).
+    - Expose les fonctions pour obtenir les contrats:
+      - `getAccountManagerContract()`
+      - `getOffreManagerContract()`
+      - `getConventionManagerContract()`
+      - etc.
+    - Vérifie:
+      - le **chainId** MetaMask (`EXPECTED_CHAIN_ID`),
+      - la présence du bytecode des contrats (`ensureContractDeployed`).
+    - Fonction utilitaire:
+      - `fetchUserFromChain(walletAddress)` pour récupérer le profil utilisateur complet.
+
+- **Authentification & inscription**
+  - `stagechain-front/src/components/pages/AuthPage.js`
+    - Gère:
+      - la **saisie manuelle** de l’adresse wallet,
+      - la **vérification stricte** que le wallet saisi = wallet MetaMask actif,
+      - la sélection du rôle (étudiant / encadrant / RH / admin),
+      - l’affichage des formulaires d’inscription pour admin université et RH,
+      - la redirection selon le rôle après login.
+
+  - `stagechain-front/src/components/common/MMPopup.js`
+    - Popup de connexion MetaMask avec les textes adaptés au réseau **Hardhat local (31337)**.
+
+- **Administration – gestion des utilisateurs**
+  - `stagechain-front/src/components/admin/AdminUsers.js`
+    - Interface admin université:
+      - création de comptes **étudiant** et **encadrant**,
+      - affichage des étudiants/encadrants liés à l’université (on-chain).
+
+- **RH – gestion des offres et candidats**
+  - `stagechain-front/src/components/rh/RhOffres.js`
+    - Liste des offres du RH connecté (données depuis `SC2_OffreManager.sol`).
+    - Formulaire de création d’offre.
+
+  - `stagechain-front/src/components/rh/RhCandidats.js`
+    - Liste des candidatures reçues.
+    - Actions:
+      - **Accepter** / **refuser** une candidature (SC2).
+      - À l’acceptation : génération et signature de la convention (`genererConvention`).
+
+- **Étudiant – matching & convention**
+  - `stagechain-front/src/components/etudiant/Matching.js`
+    - Affichage des offres actives pour l’étudiant.
+    - Possibilité de **postuler** à une offre.
+
+  - `stagechain-front/src/components/etudiant/Convention.js`
+    - Affichage de la convention associée à l’étudiant (si existante).
+    - Possibilité de **signer** la convention.
+
+- **Admin – conventions**
+  - `stagechain-front/src/components/admin/AdminConv.js`
+    - Vue admin université des conventions liées à son université.
+    - Possibilité de **signer** la convention en tant qu’admin.
+
+---
+
+### 4. Fichiers blockchain importants
+
+- `blockchain/contracts/SC1_AccountManager.sol`
+  - Définit la structure `User` (wallet, rôle, nom, prénom, filière, entreprise, email, téléphone, poste, ville, université, isActive, registeredAt).
+  - Fonctions clés:
+    - `getRole(address)`
+    - `getUser(address)`
+    - `registerUniversite(...)`
+    - `registerRH(...)`
+    - `addStudent(...)`
+    - `addEncadrant(...)`
+
+- `blockchain/contracts/SC2_OffreManager.sol`
+  - Gestion des offres et candidatures:
+    - `publierOffre(...)`
+    - `getAllOffres()`, `getOffre(...)`
+    - `postuler(...)`
+    - `selectionnerEtudiant(...)`
+    - `refuserCandidature(...)`
+
+- `blockchain/contracts/SC3_ConventionManager.sol`
+  - Gestion des conventions:
+    - `genererConvention(...)`
+    - `getConventionByEtudiant(...)`
+    - `signerParEtudiant(...)`
+    - `signerParRH(...)`
+    - `signerParAdmin(...)`
+  - Les signatures ne bloquent plus si aucun encadrant n’est encore affecté.
+
+- `blockchain/ignition/deployments/chain-31337/deployed_addresses.json`
+  - Contient les **adresses de déploiement locales** des contrats.
+  - À utiliser pour mettre à jour les adresses par défaut dans `useContract.js` si besoin.
+
+---
+
+### 5. Relancer l’application correctement (ordre recommandé)
+
+À faire à chaque session de travail (ou après un redémarrage PC). Utiliser **un terminal par étape** si besoin.
+
+**A. Arrêter les anciens processus (évite port 8545 / 3000 / 4000 déjà utilisés)**
+
+- Fermer les terminaux où tournent encore `hardhat node`, `npm start` (front), `npm start` (convention-api).
+- Sous Windows, si un port reste bloqué : Gestionnaire des tâches → terminer le `node.exe` concerné, ou identifier le PID avec `netstat -ano | findstr :8545` (idem pour `3000` et `4000`).
+
+**B. Blockchain**
+
+1. `cd blockchain`
+2. `npm install` (première fois ou après pull)
+3. `npx hardhat node` — laisser ce terminal ouvert (RPC `http://127.0.0.1:8545`, chainId **31337**).
+
+**C. Déploiement des contrats**
+
+1. Nouveau terminal : `cd blockchain`
+2. `npx hardhat compile` (après modification d’un `.sol`)
+3. `npx hardhat ignition deploy ignition/modules/StageChainDeploy.ts --network localhost --reset`
+4. Si les adresses affichées changent : mettre à jour `DEFAULT_ADDRESSES` ou les variables `REACT_APP_*_ADDRESS` dans `stagechain-front` (voir `useContract.js`).
+
+**D. API convention**
+
+1. `cd convention-api`
+2. `npm install`
+3. Copier `.env.example` → `.env`
+4. Renseigner au minimum :
+   - `CORS_ORIGIN=http://localhost:3000`
+5. **MongoDB Atlas** : Renseignez `MONGODB_URI` avec l'URL **Standard** de votre cluster (pas le format `+srv` si le réseau bloque le port DNS). **Important :** N'oubliez pas d'autoriser votre adresse IP (ou `0.0.0.0/0`) dans "Network Access" sur MongoDB Atlas, sinon vous aurez une erreur de type `ETIMEOUT` ou `Authentication failed`.
+6. `npm start` — doit afficher `Convention API running on http://localhost:4000`
+7. Vérification : ouvrir [http://localhost:4000/health](http://localhost:4000/health) (`ok: true`).
+
+**E. Frontend**
+
+1. `cd stagechain-front`
+2. `npm install`
+3. Si l’API n’est pas sur `http://localhost:4000`, créer `.env` avec :
+   - `REACT_APP_CONVENTION_API_URL=http://localhost:4000`
+4. `npm start` — [http://localhost:3000](http://localhost:3000)
+
+**F. MetaMask**
+
+- Réseau personnalisé : RPC `http://127.0.0.1:8545`, chain ID **31337**.
+- Après un `--reset` du déploiement, les comptes / données on-chain repartent à zéro : réinscrire les rôles si nécessaire.
+
+**Après modification du code**
+
+| Zone modifiée | Actions typiques |
+|---------------|------------------|
+| Contrats Solidity (`blockchain/contracts/`) | `npx hardhat compile` puis redeploy `--network localhost --reset`, puis recharger le front |
+| Front (`stagechain-front/`) | `npm start` (hot reload) ou `npm run build` pour prod |
+| API Mongo (`convention-api/`) | Redémarrer `npm start` dans `convention-api` |
+
+---
+
+### 6. Partage avec les collègues
+
+Pour comprendre ou modifier le projet, les collègues peuvent commencer par :
+- Lire **ce `README.md`** (racine) pour une vue d’ensemble.
+- Lire `blockchain/README.md` pour les détails blockchain (tests, architecture complète).
+- Lire `stagechain-front/src/components/hooks/useContract.js` pour comprendre **comment le front parle aux contrats**.
+- Explorer ensuite les pages:
+  - `AuthPage.js` (authentification/inscription),
+  - `AdminUsers.js` et `AdminConv.js` (admin),
+  - `RhOffres.js` et `RhCandidats.js` (RH),
+  - `Matching.js` et `Convention.js` (étudiant).

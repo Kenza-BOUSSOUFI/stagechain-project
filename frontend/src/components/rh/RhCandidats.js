@@ -77,6 +77,8 @@ const RhCandidats = () => {
             niveau: u.poste || '',
             conventionId: convId || null,
             convention: conv,
+            cidCV: c.cidCV,
+            cidLM: c.cidLM,
           });
         }
       }
@@ -324,7 +326,31 @@ const RhCandidats = () => {
             <ML label="Langues" value={profM.langues || '—'} />
             <ML label="Compétences requises (offre)" value={profM.competences} />
             <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 10, marginBottom: 12 }}>
-              CV et lettre de motivation : déposés sur IPFS par l’étudiant au moment de la postulation (références on-chain sur le contrat des offres).
+              Documents déposés sur IPFS :
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>
+              <Btn 
+                v="secondary" 
+                sm 
+                I={Download} 
+                onClick={() => {
+                  if (profM.cidCV) window.open(`https://gateway.pinata.cloud/ipfs/${profM.cidCV}`, '_blank');
+                  else toast('CV non disponible', 'warning');
+                }}
+              >
+                Voir le CV (PDF)
+              </Btn>
+              <Btn 
+                v="secondary" 
+                sm 
+                I={Download} 
+                onClick={() => {
+                  if (profM.cidLM) window.open(`https://gateway.pinata.cloud/ipfs/${profM.cidLM}`, '_blank');
+                  else toast('Lettre de motivation non disponible', 'warning');
+                }}
+              >
+                Voir la Lettre (PDF)
+              </Btn>
             </div>
             {profM.status === 'EN_ATTENTE' && (
               <div style={{ display: 'flex', gap: 9 }}>

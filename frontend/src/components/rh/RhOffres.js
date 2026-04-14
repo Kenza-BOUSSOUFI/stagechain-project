@@ -116,7 +116,7 @@ const RhOffres = () => {
 
       <Alrt
         type="info"
-        message={`Offres publiées: ${publishedCount} · Les offres sont enregistrées sur la blockchain et visibles par les étudiants.`}
+        message={`Offres publiées: ${publishedCount}`}
       />
 
       {showForm && (
